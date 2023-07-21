@@ -1,36 +1,31 @@
-import { ChainId } from 'ptokens-constants'
-import { pTokensAsset } from 'ptokens-entities'
-import { pTokensNode, Status, InnerTransactionStatus } from 'ptokens-node'
-import PromiEvent from 'promievent'
-import polling from 'light-async-polling'
 import BigNumber from 'bignumber.js'
+import PromiEvent from 'promievent'
+import { SwapResult, pTokensAsset } from 'ptokens-entities'
 
 export type DestinationInfo = {
   asset: pTokensAsset
   destinationAddress: string
-  userData?: Uint8Array
+  userData?: string
+  toNative?: boolean
 }
 
 export class pTokensSwap {
-  private _node: pTokensNode
   private _sourceAsset: pTokensAsset
   private _destinationAssets: DestinationInfo[]
   private _amount: BigNumber
-  private controller: AbortController
+  private _controller: AbortController
 
   /**
    * Create and initialize a pTokensSwap object. pTokensSwap object shall be created using a pTokensSwapBuilder object.
-   * @param node - A pNetworkNode necessary for the swap process.
    * @param sourceAsset - The pTokensAsset that will be the source asset for the swap.
    * @param destinationAssets - The pTokensAsset array that will be destination assets for the swap.
    * @param amount - The amount of source asset that will be swapped.
    */
-  constructor(node: pTokensNode, sourceAsset: pTokensAsset, destinationAssets: DestinationInfo[], amount: BigNumber) {
-    this._node = node
+  constructor(sourceAsset: pTokensAsset, destinationAssets: DestinationInfo[], amount: BigNumber.Value) {
     this._sourceAsset = sourceAsset
     this._destinationAssets = destinationAssets
-    this._amount = amount
-    this.controller = new AbortController()
+    this._amount = BigNumber(amount)
+    this._controller = new AbortController()
     if (!this.isAmountSufficient()) throw new Error('Insufficient amount to cover fees')
   }
 
@@ -55,145 +50,60 @@ export class pTokensSwap {
     return this._amount.toFixed()
   }
 
-  /**
-   * Return the pTokensNode set when creating the builder.
-   */
-  get node(): pTokensNode {
-    return this._node
-  }
+  // /**
+  //  * Return the pTokensNode set when creating the builder.
+  //  */
+  // private getSwapBasisPoints() {
+  //   // take the first destination asset as, for now, pNetwork supports just one destination
+  //   if ('nativeToNative' in this._sourceAsset.assetInfo.fees.basisPoints)
+  //     return this._sourceAsset.assetInfo.fees.basisPoints.nativeToNative
+  //   else if ('hostToNative' in this._sourceAsset.assetInfo.fees.basisPoints)
+  //     return this._sourceAsset.assetInfo.fees.basisPoints.hostToNative
+  //   else throw new Error('Invalid basis points')
+  // }
 
-  private getSwapBasisPoints() {
-    // take the first destination asset as, for now, pNetwork supports just one destination
-    if (
-      this._sourceAsset.assetInfo.isNative &&
-      this._destinationAssets[0].asset.assetInfo.isNative &&
-      'nativeToNative' in this._sourceAsset.assetInfo.fees.basisPoints
-    )
-      return this._sourceAsset.assetInfo.fees.basisPoints.nativeToNative
-    else if (
-      this._sourceAsset.assetInfo.isNative &&
-      !this._destinationAssets[0].asset.assetInfo.isNative &&
-      'nativeToHost' in this._sourceAsset.assetInfo.fees.basisPoints
-    )
-      return this._sourceAsset.assetInfo.fees.basisPoints.nativeToHost
-    else if (
-      !this._sourceAsset.assetInfo.isNative &&
-      this._destinationAssets[0].asset.assetInfo.isNative &&
-      'hostToNative' in this._sourceAsset.assetInfo.fees.basisPoints
-    )
-      return this._sourceAsset.assetInfo.fees.basisPoints.hostToNative
-    else if (
-      !this._sourceAsset.assetInfo.isNative &&
-      !this._destinationAssets[0].asset.assetInfo.isNative &&
-      'hostToHost' in this._sourceAsset.assetInfo.fees.basisPoints
-    )
-      return this._sourceAsset.assetInfo.fees.basisPoints.hostToHost
-    else throw new Error('Invalid basis points')
-  }
+  // /**
+  //  * Get expected protocol fees for the swap
+  //  */
+  // get protocolFees() {
+  //   const interimAmount = this._amount.multipliedBy(1e18)
+  //   const basisPoints = this.getSwapBasisPoints()
+  //   return BigNumber.maximum(
+  //     this._sourceAsset.assetInfo.fees.minNodeOperatorFee,
+  //     interimAmount.multipliedBy(basisPoints).dividedBy(10000)
+  //   )
+  //     .dividedBy(1e18)
+  //     .toFixed()
+  // }
 
-  /**
-   * Get expected protocol fees for the swap
-   */
-  get protocolFees() {
-    const interimAmount = this._amount.multipliedBy(1e18)
-    const basisPoints = this.getSwapBasisPoints()
-    return BigNumber.maximum(
-      this._sourceAsset.assetInfo.fees.minNodeOperatorFee,
-      interimAmount.multipliedBy(basisPoints).dividedBy(10000)
-    )
-      .dividedBy(1e18)
-      .toFixed()
-  }
-
-  /**
-   * Get expected network fees for the swap
-   */
-  get networkFees() {
-    return BigNumber(this._destinationAssets[0].asset.assetInfo.fees.networkFee).dividedBy(1e18).toFixed()
-  }
+  // /**
+  //  * Get expected network fees for the swap
+  //  */
+  // get networkFees() {
+  //   return BigNumber(this._destinationAssets[0].asset.assetInfo.fees.networkFee).dividedBy(1e18).toFixed()
+  // }
 
   /**
    * Get expected output amount for the swap
    */
   get expectedOutputAmount() {
-    return this._amount.minus(this.protocolFees).minus(this.networkFees).toFixed()
+    return this._amount.toFixed() // .minus(this.protocolFees).minus(this.networkFees).toFixed()
   }
 
   private isAmountSufficient() {
     return BigNumber(this.expectedOutputAmount).isGreaterThanOrEqualTo(0)
   }
 
-  private monitorInputTransactions(_txHash: string, _origChainId: string): PromiEvent<InnerTransactionStatus[]> {
-    const promi = new PromiEvent<InnerTransactionStatus[]>(
-      (resolve) =>
-        (async () => {
-          async function getInputTransactions(node: pTokensNode) {
-            const resp = await node.getTransactionStatus(_txHash, _origChainId)
-            return resp.inputs
-          }
-          let resp: InnerTransactionStatus[]
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return
-          await polling(async () => {
-            try {
-              resp = await getInputTransactions(this.node)
-              if (resp.length) {
-                promi.emit('inputTxDetected', resp)
-                return true
-              }
-            } catch (err) {
-              return false
-            }
-          }, 1000)
-          resolve(resp)
-        })() as unknown
-    )
-    return promi
-  }
-
-  private monitorOutputTransactions(_txHash: string, _origChainId: string): PromiEvent<InnerTransactionStatus[]> {
-    const promi = new PromiEvent<InnerTransactionStatus[]>(
-      (resolve) =>
-        (async () => {
-          async function getOutputTransactions(node: pTokensNode) {
-            const resp = await node.getTransactionStatus(_txHash, _origChainId)
-            return resp.outputs
-          }
-          let notified = false
-          let resp: InnerTransactionStatus[]
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return
-          await polling(async () => {
-            try {
-              resp = await getOutputTransactions(this.node)
-              if (resp.length && !notified) {
-                notified = true
-                promi.emit('outputTxDetected', resp)
-                return false
-              } else if (resp.length && resp.every((el) => el.status == Status.BROADCASTED)) {
-                promi.emit('outputTxBroadcasted', resp)
-                return true
-              }
-            } catch (err) {
-              return false
-            }
-          }, 1000)
-          resolve(resp)
-        })() as unknown
-    )
-    return promi
-  }
-
-  private async waitOutputsConfirmation(_outputs: InnerTransactionStatus[]) {
-    // TODO: for Algorand, the report contains the group ID, and algosdk.waitForConfirmation() cannot be used.
-    // Anyway, confirmation is fast, so we can simulate the function with a delay.
-    if (_outputs[0].chainId === ChainId.AlgorandMainnet) await new Promise((resolve) => setTimeout(resolve, 5000))
-    else await this._destinationAssets[0].asset.provider.waitForTransactionConfirmation(_outputs[0].txHash)
+  private monitorOutputTransactions(_operationId: string) {
+    return this.destinationAssets[0]['monitorCrossChainOperations'](_operationId)
   }
 
   /**
    * Abort a running swap.
    */
+  /* istanbul ignore next */
   abort() {
-    this.controller.abort()
+    this._controller.abort()
   }
 
   /**
@@ -210,52 +120,37 @@ export class pTokensSwap {
    * If the destination asset has a provider, the PromiEvent resolves when the output transaction is confirmed; otherwise when it is broadcasted.
    */
   execute() {
-    const promi = new PromiEvent<InnerTransactionStatus[]>(
+    const promi = new PromiEvent<SwapResult>(
       (resolve, reject) =>
         (async () => {
           try {
-            this.controller.signal.addEventListener('abort', () => reject(new Error('Swap aborted by user')))
-            let swapPromiEvent: PromiEvent<string>
-            if (this.sourceAsset.assetInfo.isNative) {
-              swapPromiEvent = this.sourceAsset['nativeToInterim'](
-                this._amount,
-                this._destinationAssets[0].destinationAddress,
-                this._destinationAssets[0].asset.chainId,
-                this._destinationAssets[0].userData
-              )
-            } else {
-              swapPromiEvent = this.sourceAsset['hostToInterim'](
-                this._amount,
-                this._destinationAssets[0].destinationAddress,
-                this._destinationAssets[0].asset.chainId,
-                this._destinationAssets[0].userData
-              )
-            }
-            const txHash = await swapPromiEvent
-              .on('depositAddress', (depositAddress) => {
-                promi.emit('depositAddress', depositAddress)
+            this._controller.signal.addEventListener('abort', () => reject(new Error('Swap aborted by user')))
+            const swapResult = await this.sourceAsset['swap'](
+              this._amount,
+              this._destinationAssets[0].destinationAddress,
+              this._destinationAssets[0].asset.networkId,
+              this._destinationAssets[0].userData,
+              this._destinationAssets[0].toNative
+                ? '0x0000000000000000000000000000000000000000000000000000000000000001'
+                : '0x0000000000000000000000000000000000000000000000000000000000000000'
+            )
+              .on('txBroadcasted', (_swapResult: SwapResult) => {
+                promi.emit('inputTxBroadcasted', { txHash: _swapResult.txHash })
               })
-              .on('txBroadcasted', (txHash) => {
-                promi.emit('inputTxBroadcasted', txHash)
+              .on('txConfirmed', (_swapResult: SwapResult) => {
+                promi.emit('inputTxConfirmed', _swapResult)
               })
-              .on('txConfirmed', (txHash) => {
-                promi.emit('inputTxConfirmed', txHash)
+            const outputTx = await this.monitorOutputTransactions(swapResult.operationId)
+              .on('operationQueued', (_hash: string) => {
+                promi.emit('operationQueued', { txHash: _hash, operationId: swapResult.operationId })
               })
-            await this.monitorInputTransactions(txHash, this.sourceAsset.chainId).on('inputTxDetected', (inputs) => {
-              promi.emit('inputTxDetected', inputs)
-            })
-            const outputs = await this.monitorOutputTransactions(txHash, this.sourceAsset.chainId)
-              .on('outputTxDetected', (outputs) => {
-                promi.emit('outputTxDetected', outputs)
+              .on('operationExecuted', (_hash: string) => {
+                promi.emit('operationExecuted', { txHash: _hash, operationId: swapResult.operationId })
               })
-              .on('outputTxBroadcasted', (outputs) => {
-                promi.emit('outputTxBroadcasted', outputs)
+              .on('operationCancelled', (_hash: string) => {
+                promi.emit('operationCancelled', { txHash: _hash, operationId: swapResult.operationId })
               })
-            if (this._destinationAssets[0].asset.provider) {
-              await this.waitOutputsConfirmation(outputs)
-              promi.emit('outputTxConfirmed', outputs)
-            }
-            return resolve(outputs)
+            return resolve({ txHash: outputTx, operationId: swapResult.operationId })
           } catch (err) {
             return reject(err)
           }

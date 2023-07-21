@@ -1,23 +1,13 @@
-import { pTokensSwap, DestinationInfo } from './ptokens-swap'
-import { pTokensAsset } from 'ptokens-entities'
-import { pTokensNode } from 'ptokens-node'
-import { stringUtils, validators } from 'ptokens-helpers'
 import BigNumber from 'bignumber.js'
-import { ChainId, TokenAddresses } from 'ptokens-constants'
+import { pTokensAsset } from 'ptokens-entities'
+import { validators } from 'ptokens-helpers'
+
+import { pTokensSwap, DestinationInfo } from './ptokens-swap'
 
 export class pTokensSwapBuilder {
   private _sourceAsset: pTokensAsset
   private _destinationAssets: DestinationInfo[] = []
   private _amount: BigNumber
-  private _node: pTokensNode
-
-  /**
-   * Create and initialize a pTokensSwapBuilder object.
-   * @param _node - A pNetworkNode necessary for pNetworkSwap.
-   */
-  constructor(_node: pTokensNode) {
-    this._node = _node
-  }
 
   /**
    * Return the pTokensAsset set as source asset for the swap.
@@ -51,10 +41,15 @@ export class pTokensSwapBuilder {
    * @param _userData - Optional user data.
    * @returns The same builder. This allows methods chaining.
    */
-  addDestinationAsset(_asset: pTokensAsset, _destinationAddress: string, _userData: Uint8Array = undefined) {
-    const isValidAddressFunction = validators.chainIdToAddressValidatorMap.get(_asset.chainId)
+  addDestinationAsset(_asset: pTokensAsset, _destinationAddress: string, _userData = '0x', _toNative = false) {
+    const isValidAddressFunction = validators.chainIdToAddressValidatorMap.get(_asset.networkId)
     if (!isValidAddressFunction(_destinationAddress)) throw new Error('Invalid destination address')
-    this._destinationAssets.push({ asset: _asset, destinationAddress: _destinationAddress, userData: _userData })
+    this._destinationAssets.push({
+      asset: _asset,
+      destinationAddress: _destinationAddress,
+      userData: _userData,
+      toNative: _toNative,
+    })
     return this
   }
 
@@ -70,35 +65,13 @@ export class pTokensSwapBuilder {
    * @param _amount - The amount of source asset that will be swapped.
    * @returns The same builder. This allows methods chaining.
    */
-  setAmount(_amount: number | string) {
+  setAmount(_amount: BigNumber.Value) {
     this._amount = BigNumber(_amount)
     return this
   }
 
-  /**
-   * Return the pTokensNode set when creating the builder.
-   */
-  get node(): pTokensNode {
-    return this._node
-  }
-
   private isValidSwap() {
-    if (
-      this.sourceAsset.assetInfo.tokenAddress === TokenAddresses.PTLOS_ON_ETH &&
-      this.destinationAssets.some((_dest) => _dest.assetInfo.chainId !== ChainId.TelosMainnet)
-    )
-      return false
-    else if (
-      this.sourceAsset.assetInfo.tokenAddress === TokenAddresses.PIQ_ON_ETH &&
-      this.destinationAssets.some((_dest) => _dest.assetInfo.chainId !== ChainId.EosMainnet)
-    )
-      return false
-    else
-      return this.destinationAssets.every(
-        (_asset) =>
-          stringUtils.addHexPrefix(_asset.assetInfo.tokenReference).toLowerCase() ===
-          stringUtils.addHexPrefix(this.sourceAsset.assetInfo.tokenReference).toLowerCase()
-      )
+    return true // TODO: check ptoken adresses are the same
   }
 
   /**
@@ -106,11 +79,11 @@ export class pTokensSwapBuilder {
    * @returns - An immutable pTokensSwap object.
    */
   build(): pTokensSwap {
-    if (!this._amount) throw new Error('Missing amount')
     if (!this._sourceAsset) throw new Error('Missing source asset')
     if (this._destinationAssets.length === 0) throw new Error('Missing destination assets')
+    if (!this._amount) throw new Error('Missing amount')
     if (!this.isValidSwap()) throw new Error('Invalid swap')
-    const ret = new pTokensSwap(this._node, this.sourceAsset, this._destinationAssets, this._amount)
+    const ret = new pTokensSwap(this.sourceAsset, this._destinationAssets, this._amount)
     return ret
   }
 }

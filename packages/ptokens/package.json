@@ -1,24 +1,20 @@
 {
   "name": "ptokens",
-  "version": "1.5.0",
+  "version": "1.4.0",
   "main": "dist/bundle.cjs.js",
   "module": "dist/bundle.esm.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "rollup -c ../../rollup.config.js",
-    "dev": "rollup -c ../../rollup.config.js -w",
+    "build": "rollup -c ../../rollup.config.mjs",
+    "dev": "rollup -c ../../rollup.config.mjs -w",
     "lint": "eslint ./src/",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "ptokens-assets-algorand": "^1.5.0",
-    "ptokens-assets-eosio": "^1.5.0",
-    "ptokens-assets-evm": "^1.5.0",
-    "ptokens-assets-utxo": "^1.5.0",
-    "ptokens-constants": "^1.5.0",
-    "ptokens-entities": "^1.5.0",
-    "ptokens-helpers": "^1.5.0",
-    "ptokens-node": "^1.5.0",
-    "ptokens-swap": "^1.5.0"
+    "ptokens-assets-evm": "file:../ptokens-assets-evm",
+    "ptokens-constants": "file:../ptokens-constants",
+    "ptokens-entities": "file:../ptokens-entities",
+    "ptokens-helpers": "file:../ptokens-helpers",
+    "ptokens-swap": "file:../ptokens-swap"
   }
 }

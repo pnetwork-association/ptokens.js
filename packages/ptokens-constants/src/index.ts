@@ -1,19 +1,8 @@
-export enum ChainId {
-  EthereumMainnet = '0x005fe7f9',
-  BitcoinMainnet = '0x01ec97de',
-  BitcoinTestnet = '0x018afeb2',
-  EosMainnet = '0x02e7261c',
-  TelosMainnet = '0x028c7109',
-  BscMainnet = '0x00e4b170',
-  XdaiMainnet = '0x00f1918e',
-  PolygonMainnet = '0x0075dd4c',
-  UltraMainnet = '0x02f9337d',
-  ArbitrumMainnet = '0x00ce98c4',
-  LuxochainMainnet = '0x00d5beb0',
-  FantomMainnet = '0x0022af98',
-  AlgorandMainnet = '0x03c38e67',
-  LibreMainnet = '0x026776fa',
-  LitecoinMainnet = '0x01840435',
+export enum NetworkId {
+  SepoliaTestnet = '0xe15503e4',
+  GoerliTestnet = '0xb9286154',
+  ArbitrumMainnet = '0xfc8ebb2b',
+  GnosisMainnet = '0xd41b1c5b',
 }
 
 export enum BlockchainType {
@@ -23,26 +12,17 @@ export enum BlockchainType {
   ALGORAND,
 }
 
-export const chainIdToTypeMap = new Map<string, BlockchainType>([
-  [ChainId.EthereumMainnet, BlockchainType.EVM],
-  [ChainId.BitcoinMainnet, BlockchainType.UTXO],
-  [ChainId.BitcoinTestnet, BlockchainType.UTXO],
-  [ChainId.EosMainnet, BlockchainType.EOSIO],
-  [ChainId.TelosMainnet, BlockchainType.EOSIO],
-  [ChainId.BscMainnet, BlockchainType.EVM],
-  [ChainId.XdaiMainnet, BlockchainType.EVM],
-  [ChainId.PolygonMainnet, BlockchainType.EVM],
-  [ChainId.UltraMainnet, BlockchainType.EOSIO],
-  [ChainId.ArbitrumMainnet, BlockchainType.EVM],
-  [ChainId.LuxochainMainnet, BlockchainType.EVM],
-  [ChainId.FantomMainnet, BlockchainType.EVM],
-  [ChainId.AlgorandMainnet, BlockchainType.ALGORAND],
-  [ChainId.LibreMainnet, BlockchainType.EOSIO],
-  [ChainId.LitecoinMainnet, BlockchainType.UTXO],
+export const networkIdToTypeMap = new Map<string, BlockchainType>([
+  [NetworkId.SepoliaTestnet, BlockchainType.EVM],
+  [NetworkId.GoerliTestnet, BlockchainType.EVM],
+  [NetworkId.ArbitrumMainnet, BlockchainType.EVM],
+  [NetworkId.GnosisMainnet, BlockchainType.EVM],
 ])
 
 export enum Blockchain {
   Ethereum,
+  Sepolia,
+  Goerli,
   Bitcoin,
   Eos,
   Telos,
@@ -57,6 +37,7 @@ export enum Blockchain {
   Algorand,
   Libre,
   Litecoin,
+  Gnosis,
 }
 
 export enum Network {
@@ -64,7 +45,7 @@ export enum Network {
   Testnet,
 }
 
-export enum TokenAddresses {
-  PTLOS_ON_ETH = '0x7825e833d495f3d1c28872415a4aee339d26ac88',
-  PIQ_ON_ETH = '0xa23d33d5e0a61ba81919bfd727c671bb03ab0fea',
-}
+export const FactoryAddress = new Map<NetworkId, string>([
+  [NetworkId.ArbitrumMainnet, '0x42807B8Bbb9A345E0B8333bc8f0F7e946b724C64'],
+  [NetworkId.GnosisMainnet, '0x678eE2CD8e912693aa7933730F2b55c678136c34'],
+])

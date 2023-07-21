@@ -1,70 +1,59 @@
+import { Blockchain, NetworkId, Network } from 'ptokens-constants'
+
 import { pTokensEvmAssetBuilder, pTokensEvmProvider } from '../src'
-import { Blockchain, ChainId, Network } from 'ptokens-constants'
-import { pTokensNode, pTokensNodeProvider } from 'ptokens-node'
-
-const hostToXFees = {
-  networkFee: 5e18,
-  minNodeOperatorFee: 6e18,
-  basisPoints: {
-    hostToHost: 70,
-    hostToNative: 80,
-  },
-}
-
-jest.mock('web3')
+import ABI from '../src/abi/PFactroryAbi'
 
 describe('EVM asset', () => {
-  test('Should create an EVM asset without provider', async () => {
-    const assetInfo = {
-      chainId: ChainId.EthereumMainnet,
-      isNative: false,
-      tokenAddress: '123456789',
-      tokenReference: 'token-internal-address',
-      fees: hostToXFees,
-    }
-    const getAssetInfoSpy = jest.spyOn(pTokensNode.prototype, 'getAssetInfoByChainId').mockResolvedValue(assetInfo)
-    const node = new pTokensNode(new pTokensNodeProvider('node-provider-url'))
-    const builder = new pTokensEvmAssetBuilder(node)
-    builder.setBlockchain(ChainId.EthereumMainnet)
-    builder.setSymbol('SYM')
-    builder.setDecimals(18)
-    const asset = await builder.build()
-    expect(getAssetInfoSpy).toHaveBeenNthCalledWith(1, 'SYM', ChainId.EthereumMainnet)
-    expect(asset.blockchain).toStrictEqual(Blockchain.Ethereum)
-    expect(asset.network).toStrictEqual(Network.Mainnet)
-    expect(asset.chainId).toStrictEqual(ChainId.EthereumMainnet)
-    expect(asset.weight).toEqual(1)
-    expect(asset.provider).toEqual(undefined)
+  beforeAll(() => {
+    jest.restoreAllMocks()
   })
 
   test('Should create an EVM asset with provider', async () => {
     const assetInfo = {
-      chainId: ChainId.EthereumMainnet,
+      networkId: NetworkId.ArbitrumMainnet,
       isNative: false,
-      tokenAddress: '123456789',
-      tokenReference: 'token-internal-address',
+      symbol: 'pSYM',
+      assetTokenAddress: '123456789',
       decimals: 18,
-      fees: hostToXFees,
+      underlyingAssetDecimals: 18,
+      underlyingAssetNetworkId: NetworkId.GnosisMainnet,
+      underlyingAssetSymbol: 'SYM',
+      underlyingAssetName: 'Symbol',
+      underlyingAssetTokenAddress: 'underlying-asset-token-address',
     }
-    const getAssetInfoSpy = jest.spyOn(pTokensNode.prototype, 'getAssetInfoByChainId').mockResolvedValue(assetInfo)
-    const provider = new pTokensEvmProvider()
-    const node = new pTokensNode(new pTokensNodeProvider('node-provider-url'))
-    const builder = new pTokensEvmAssetBuilder(node)
-    builder.setBlockchain(ChainId.EthereumMainnet)
-    builder.setSymbol('SYM')
+    const provider = new pTokensEvmProvider('http://provider.eth')
+    const makeContractCallSpy = jest
+      .spyOn(provider, 'makeContractCall')
+      .mockResolvedValueOnce('router-address')
+      .mockResolvedValueOnce('state-manager-address')
+    const builder = new pTokensEvmAssetBuilder(provider)
+    builder.setBlockchain(NetworkId.ArbitrumMainnet)
+    builder.setAssetInfo(assetInfo)
     builder.setProvider(provider)
     const asset = await builder.build()
-    expect(getAssetInfoSpy).toHaveBeenNthCalledWith(1, 'SYM', ChainId.EthereumMainnet)
-    expect(asset.blockchain).toStrictEqual(Blockchain.Ethereum)
+    expect(makeContractCallSpy).toHaveBeenCalledTimes(2)
+    expect(makeContractCallSpy).toHaveBeenNthCalledWith(1, {
+      abi: ABI,
+      method: 'router',
+      contractAddress: '0x42807B8Bbb9A345E0B8333bc8f0F7e946b724C64',
+    })
+    expect(makeContractCallSpy).toHaveBeenNthCalledWith(2, {
+      abi: ABI,
+      method: 'stateManager',
+      contractAddress: '0x42807B8Bbb9A345E0B8333bc8f0F7e946b724C64',
+    })
+    expect(asset.stateManagerAddress).toStrictEqual('state-manager-address')
+    expect(asset.routerAddress).toStrictEqual('router-address')
+    expect(asset.blockchain).toStrictEqual(Blockchain.Arbitrum)
     expect(asset.network).toStrictEqual(Network.Mainnet)
-    expect(asset.chainId).toStrictEqual(ChainId.EthereumMainnet)
+    expect(asset.networkId).toStrictEqual(NetworkId.ArbitrumMainnet)
     expect(asset.weight).toEqual(1)
     expect(asset.provider).toEqual(provider)
   })
 
   test('Should not create an EVM asset without blockchain data', async () => {
-    const node = new pTokensNode(new pTokensNodeProvider('node-provider-url'))
-    const builder = new pTokensEvmAssetBuilder(node)
+    const provider = new pTokensEvmProvider('http://provider.eth')
+    const builder = new pTokensEvmAssetBuilder(provider)
     try {
       await builder.build()
       fail()
@@ -73,15 +62,15 @@ describe('EVM asset', () => {
     }
   })
 
-  test('Should not create an EVM asset without symbol', async () => {
-    const node = new pTokensNode(new pTokensNodeProvider('node-provider-url'))
-    const builder = new pTokensEvmAssetBuilder(node)
+  test('Should not create an EVM asset without asset info', async () => {
+    const provider = new pTokensEvmProvider('http://provider.eth')
+    const builder = new pTokensEvmAssetBuilder(provider)
     try {
-      builder.setBlockchain(ChainId.EthereumMainnet)
+      builder.setBlockchain(NetworkId.SepoliaTestnet)
       await builder.build()
       fail()
     } catch (err) {
-      expect(err.message).toStrictEqual('Missing symbol')
+      expect(err.message).toStrictEqual('Missing asset info')
     }
   })
 })

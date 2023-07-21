@@ -1,14 +1,16 @@
 import { BlockchainType } from 'ptokens-constants'
 import { pTokensAssetBuilder } from 'ptokens-entities'
-import { pTokensNode } from 'ptokens-node'
+
+import factoryAbi from './abi/PFactroryAbi'
 import { pTokensEvmAsset } from './ptokens-evm-asset'
 import { pTokensEvmProvider } from './ptokens-evm-provider'
 
 export class pTokensEvmAssetBuilder extends pTokensAssetBuilder {
   private _provider: pTokensEvmProvider
 
-  constructor(_node: pTokensNode) {
-    super(_node, BlockchainType.EVM)
+  constructor(_provider: pTokensEvmProvider) {
+    super(BlockchainType.EVM)
+    this._provider = _provider
   }
 
   /**
@@ -23,14 +25,25 @@ export class pTokensEvmAssetBuilder extends pTokensAssetBuilder {
 
   // eslint-disable-next-line @typescript-eslint/require-await
   protected async _build(): Promise<pTokensEvmAsset> {
+    const routerAddress = await this._provider.makeContractCall<string, []>({
+      contractAddress: this.factoryAddress,
+      method: 'router',
+      abi: factoryAbi,
+    })
+    const stateManagerAddress: string = await this._provider.makeContractCall<string, []>({
+      contractAddress: this.factoryAddress,
+      method: 'stateManager',
+      abi: factoryAbi,
+    })
     const config = {
-      node: this._node,
-      symbol: this._symbol,
-      chainId: this._chainId,
+      networkId: this._networkId,
       blockchain: this._blockchain,
       network: this._network,
-      assetInfo: this._assetInfo,
+      assetInfo: this.assetInfo,
       provider: this._provider,
+      factoryAddress: this.factoryAddress,
+      routerAddress,
+      stateManagerAddress,
     }
     return new pTokensEvmAsset(config)
   }
