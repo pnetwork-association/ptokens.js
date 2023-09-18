@@ -18,6 +18,11 @@ export default [
       },
       {
         internalType: 'address',
+        name: 'feesManager_',
+        type: 'address',
+      },
+      {
+        internalType: 'address',
         name: 'telepathyRouter',
         type: 'address',
       },
@@ -27,9 +32,14 @@ export default [
         type: 'address',
       },
       {
-        internalType: 'uint32',
-        name: 'allowedSourceChainId',
-        type: 'uint32',
+        internalType: 'address',
+        name: 'registry',
+        type: 'address',
+      },
+      {
+        internalType: 'address',
+        name: 'slasher_',
+        type: 'address',
       },
       {
         internalType: 'uint256',
@@ -51,6 +61,16 @@ export default [
         name: 'interimChainNetworkId_',
         type: 'bytes4',
       },
+      {
+        internalType: 'uint256',
+        name: 'lockedAmountOpenChallenge_',
+        type: 'uint256',
+      },
+      {
+        internalType: 'uint64',
+        name: 'maxChallengeDuration_',
+        type: 'uint64',
+      },
     ],
     stateMutability: 'nonpayable',
     type: 'constructor',
@@ -58,6 +78,39 @@ export default [
   {
     inputs: [],
     name: 'CallFailed',
+    type: 'error',
+  },
+  {
+    inputs: [
+      {
+        components: [
+          {
+            internalType: 'uint256',
+            name: 'nonce',
+            type: 'uint256',
+          },
+          {
+            internalType: 'address',
+            name: 'actor',
+            type: 'address',
+          },
+          {
+            internalType: 'address',
+            name: 'challenger',
+            type: 'address',
+          },
+          {
+            internalType: 'uint64',
+            name: 'timestamp',
+            type: 'uint64',
+          },
+        ],
+        internalType: 'struct IPNetworkHub.Challenge',
+        name: 'challenge',
+        type: 'tuple',
+      },
+    ],
+    name: 'ChallengeNotFound',
     type: 'error',
   },
   {
@@ -168,6 +221,11 @@ export default [
           },
           {
             internalType: 'string',
+            name: 'originAccount',
+            type: 'string',
+          },
+          {
+            internalType: 'string',
             name: 'destinationAccount',
             type: 'string',
           },
@@ -185,6 +243,11 @@ export default [
             internalType: 'bytes',
             name: 'userData',
             type: 'bytes',
+          },
+          {
+            internalType: 'bool',
+            name: 'isForProtocol',
+            type: 'bool',
           },
         ],
         internalType: 'struct IPNetworkHub.Operation',
@@ -271,6 +334,11 @@ export default [
           },
           {
             internalType: 'string',
+            name: 'originAccount',
+            type: 'string',
+          },
+          {
+            internalType: 'string',
             name: 'destinationAccount',
             type: 'string',
           },
@@ -289,6 +357,11 @@ export default [
             name: 'userData',
             type: 'bytes',
           },
+          {
+            internalType: 'bool',
+            name: 'isForProtocol',
+            type: 'bool',
+          },
         ],
         internalType: 'struct IPNetworkHub.Operation',
         name: 'operation',
@@ -296,6 +369,22 @@ export default [
       },
     ],
     name: 'GuardianOperationAlreadyCancelled',
+    type: 'error',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'enum IPNetworkHub.ActorStatus',
+        name: 'status',
+        type: 'uint8',
+      },
+      {
+        internalType: 'enum IPNetworkHub.ActorStatus',
+        name: 'expectedStatus',
+        type: 'uint8',
+      },
+    ],
+    name: 'InvalidActorStatus',
     type: 'error',
   },
   {
@@ -312,6 +401,33 @@ export default [
       },
     ],
     name: 'InvalidAssetParameters',
+    type: 'error',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'enum IPNetworkHub.ChallengeStatus',
+        name: 'status',
+        type: 'uint8',
+      },
+      {
+        internalType: 'enum IPNetworkHub.ChallengeStatus',
+        name: 'expectedStatus',
+        type: 'uint8',
+      },
+    ],
+    name: 'InvalidChallengeStatus',
+    type: 'error',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'uint16',
+        name: 'epoch',
+        type: 'uint16',
+      },
+    ],
+    name: 'InvalidEpoch',
     type: 'error',
   },
   {
@@ -344,6 +460,17 @@ export default [
   {
     inputs: [
       {
+        internalType: 'address',
+        name: 'guardian',
+        type: 'address',
+      },
+    ],
+    name: 'InvalidGuardian',
+    type: 'error',
+  },
+  {
+    inputs: [
+      {
         internalType: 'uint256',
         name: 'lockedAmountChallengePeriod',
         type: 'uint256',
@@ -355,6 +482,22 @@ export default [
       },
     ],
     name: 'InvalidLockedAmountChallengePeriod',
+    type: 'error',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'uint256',
+        name: 'lockedAmountStartChallenge',
+        type: 'uint256',
+      },
+      {
+        internalType: 'uint256',
+        name: 'expectedLockedAmountStartChallenge',
+        type: 'uint256',
+      },
+    ],
+    name: 'InvalidLockedAmountStartChallenge',
     type: 'error',
   },
   {
@@ -449,6 +592,11 @@ export default [
           },
           {
             internalType: 'string',
+            name: 'originAccount',
+            type: 'string',
+          },
+          {
+            internalType: 'string',
             name: 'destinationAccount',
             type: 'string',
           },
@@ -466,6 +614,11 @@ export default [
             internalType: 'bytes',
             name: 'userData',
             type: 'bytes',
+          },
+          {
+            internalType: 'bool',
+            name: 'isForProtocol',
+            type: 'bool',
           },
         ],
         internalType: 'struct IPNetworkHub.Operation',
@@ -495,17 +648,12 @@ export default [
   {
     inputs: [
       {
-        internalType: 'uint32',
-        name: 'sourceChainId',
-        type: 'uint32',
-      },
-      {
-        internalType: 'uint32',
-        name: 'expectedSourceChainId',
-        type: 'uint32',
+        internalType: 'address',
+        name: 'sentinel',
+        type: 'address',
       },
     ],
-    name: 'InvalidSourceChainId',
+    name: 'InvalidSentinel',
     type: 'error',
   },
   {
@@ -516,6 +664,26 @@ export default [
   {
     inputs: [],
     name: 'LockDown',
+    type: 'error',
+  },
+  {
+    inputs: [],
+    name: 'MaxChallengeDurationMustBeLessOrEqualThanMaxChallengePeriodDuration',
+    type: 'error',
+  },
+  {
+    inputs: [],
+    name: 'MaxChallengeDurationNotPassed',
+    type: 'error',
+  },
+  {
+    inputs: [],
+    name: 'MaxChallengeDurationPassed',
+    type: 'error',
+  },
+  {
+    inputs: [],
+    name: 'NearToEpochEnd',
     type: 'error',
   },
   {
@@ -626,6 +794,11 @@ export default [
           },
           {
             internalType: 'string',
+            name: 'originAccount',
+            type: 'string',
+          },
+          {
+            internalType: 'string',
             name: 'destinationAccount',
             type: 'string',
           },
@@ -643,6 +816,11 @@ export default [
             internalType: 'bytes',
             name: 'userData',
             type: 'bytes',
+          },
+          {
+            internalType: 'bool',
+            name: 'isForProtocol',
+            type: 'bool',
           },
         ],
         internalType: 'struct IPNetworkHub.Operation',
@@ -729,6 +907,11 @@ export default [
           },
           {
             internalType: 'string',
+            name: 'originAccount',
+            type: 'string',
+          },
+          {
+            internalType: 'string',
             name: 'destinationAccount',
             type: 'string',
           },
@@ -746,6 +929,11 @@ export default [
             internalType: 'bytes',
             name: 'userData',
             type: 'bytes',
+          },
+          {
+            internalType: 'bool',
+            name: 'isForProtocol',
+            type: 'bool',
           },
         ],
         internalType: 'struct IPNetworkHub.Operation',
@@ -832,6 +1020,11 @@ export default [
           },
           {
             internalType: 'string',
+            name: 'originAccount',
+            type: 'string',
+          },
+          {
+            internalType: 'string',
             name: 'destinationAccount',
             type: 'string',
           },
@@ -849,6 +1042,11 @@ export default [
             internalType: 'bytes',
             name: 'userData',
             type: 'bytes',
+          },
+          {
+            internalType: 'bool',
+            name: 'isForProtocol',
+            type: 'bool',
           },
         ],
         internalType: 'struct IPNetworkHub.Operation',
@@ -935,6 +1133,11 @@ export default [
           },
           {
             internalType: 'string',
+            name: 'originAccount',
+            type: 'string',
+          },
+          {
+            internalType: 'string',
             name: 'destinationAccount',
             type: 'string',
           },
@@ -952,6 +1155,11 @@ export default [
             internalType: 'bytes',
             name: 'userData',
             type: 'bytes',
+          },
+          {
+            internalType: 'bool',
+            name: 'isForProtocol',
+            type: 'bool',
           },
         ],
         internalType: 'struct IPNetworkHub.Operation',
@@ -1054,6 +1262,11 @@ export default [
           },
           {
             internalType: 'string',
+            name: 'originAccount',
+            type: 'string',
+          },
+          {
+            internalType: 'string',
             name: 'destinationAccount',
             type: 'string',
           },
@@ -1072,6 +1285,11 @@ export default [
             name: 'userData',
             type: 'bytes',
           },
+          {
+            internalType: 'bool',
+            name: 'isForProtocol',
+            type: 'bool',
+          },
         ],
         internalType: 'struct IPNetworkHub.Operation',
         name: 'operation',
@@ -1080,6 +1298,192 @@ export default [
     ],
     name: 'SentinelOperationAlreadyCancelled',
     type: 'error',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'uint32',
+        name: 'sourceChainId',
+        type: 'uint32',
+      },
+    ],
+    name: 'UnsupportedChainId',
+    type: 'error',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        components: [
+          {
+            internalType: 'uint256',
+            name: 'nonce',
+            type: 'uint256',
+          },
+          {
+            internalType: 'address',
+            name: 'actor',
+            type: 'address',
+          },
+          {
+            internalType: 'address',
+            name: 'challenger',
+            type: 'address',
+          },
+          {
+            internalType: 'uint64',
+            name: 'timestamp',
+            type: 'uint64',
+          },
+        ],
+        indexed: false,
+        internalType: 'struct IPNetworkHub.Challenge',
+        name: 'challenge',
+        type: 'tuple',
+      },
+    ],
+    name: 'ChallengeCancelled',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        components: [
+          {
+            internalType: 'uint256',
+            name: 'nonce',
+            type: 'uint256',
+          },
+          {
+            internalType: 'address',
+            name: 'actor',
+            type: 'address',
+          },
+          {
+            internalType: 'address',
+            name: 'challenger',
+            type: 'address',
+          },
+          {
+            internalType: 'uint64',
+            name: 'timestamp',
+            type: 'uint64',
+          },
+        ],
+        indexed: false,
+        internalType: 'struct IPNetworkHub.Challenge',
+        name: 'challenge',
+        type: 'tuple',
+      },
+    ],
+    name: 'ChallengePartiallyUnsolved',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        components: [
+          {
+            internalType: 'uint256',
+            name: 'nonce',
+            type: 'uint256',
+          },
+          {
+            internalType: 'address',
+            name: 'actor',
+            type: 'address',
+          },
+          {
+            internalType: 'address',
+            name: 'challenger',
+            type: 'address',
+          },
+          {
+            internalType: 'uint64',
+            name: 'timestamp',
+            type: 'uint64',
+          },
+        ],
+        indexed: false,
+        internalType: 'struct IPNetworkHub.Challenge',
+        name: 'challenge',
+        type: 'tuple',
+      },
+    ],
+    name: 'ChallengePending',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        components: [
+          {
+            internalType: 'uint256',
+            name: 'nonce',
+            type: 'uint256',
+          },
+          {
+            internalType: 'address',
+            name: 'actor',
+            type: 'address',
+          },
+          {
+            internalType: 'address',
+            name: 'challenger',
+            type: 'address',
+          },
+          {
+            internalType: 'uint64',
+            name: 'timestamp',
+            type: 'uint64',
+          },
+        ],
+        indexed: false,
+        internalType: 'struct IPNetworkHub.Challenge',
+        name: 'challenge',
+        type: 'tuple',
+      },
+    ],
+    name: 'ChallengeSolved',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        components: [
+          {
+            internalType: 'uint256',
+            name: 'nonce',
+            type: 'uint256',
+          },
+          {
+            internalType: 'address',
+            name: 'actor',
+            type: 'address',
+          },
+          {
+            internalType: 'address',
+            name: 'challenger',
+            type: 'address',
+          },
+          {
+            internalType: 'uint64',
+            name: 'timestamp',
+            type: 'uint64',
+          },
+        ],
+        indexed: false,
+        internalType: 'struct IPNetworkHub.Challenge',
+        name: 'challenge',
+        type: 'tuple',
+      },
+    ],
+    name: 'ChallengeUnsolved',
+    type: 'event',
   },
   {
     anonymous: false,
@@ -1158,6 +1562,11 @@ export default [
           },
           {
             internalType: 'string',
+            name: 'originAccount',
+            type: 'string',
+          },
+          {
+            internalType: 'string',
             name: 'destinationAccount',
             type: 'string',
           },
@@ -1175,6 +1584,11 @@ export default [
             internalType: 'bytes',
             name: 'userData',
             type: 'bytes',
+          },
+          {
+            internalType: 'bool',
+            name: 'isForProtocol',
+            type: 'bool',
           },
         ],
         indexed: false,
@@ -1263,6 +1677,11 @@ export default [
           },
           {
             internalType: 'string',
+            name: 'originAccount',
+            type: 'string',
+          },
+          {
+            internalType: 'string',
             name: 'destinationAccount',
             type: 'string',
           },
@@ -1281,6 +1700,11 @@ export default [
             name: 'userData',
             type: 'bytes',
           },
+          {
+            internalType: 'bool',
+            name: 'isForProtocol',
+            type: 'bool',
+          },
         ],
         indexed: false,
         internalType: 'struct IPNetworkHub.Operation',
@@ -1289,6 +1713,44 @@ export default [
       },
     ],
     name: 'GuardianOperationCancelled',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: 'uint16',
+        name: 'epoch',
+        type: 'uint16',
+      },
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'guardian',
+        type: 'address',
+      },
+    ],
+    name: 'GuardianResumed',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: 'uint16',
+        name: 'epoch',
+        type: 'uint16',
+      },
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'guardian',
+        type: 'address',
+      },
+    ],
+    name: 'GuardianSlashed',
     type: 'event',
   },
   {
@@ -1368,6 +1830,11 @@ export default [
           },
           {
             internalType: 'string',
+            name: 'originAccount',
+            type: 'string',
+          },
+          {
+            internalType: 'string',
             name: 'destinationAccount',
             type: 'string',
           },
@@ -1385,6 +1852,11 @@ export default [
             internalType: 'bytes',
             name: 'userData',
             type: 'bytes',
+          },
+          {
+            internalType: 'bool',
+            name: 'isForProtocol',
+            type: 'bool',
           },
         ],
         indexed: false,
@@ -1473,6 +1945,11 @@ export default [
           },
           {
             internalType: 'string',
+            name: 'originAccount',
+            type: 'string',
+          },
+          {
+            internalType: 'string',
             name: 'destinationAccount',
             type: 'string',
           },
@@ -1490,6 +1967,11 @@ export default [
             internalType: 'bytes',
             name: 'userData',
             type: 'bytes',
+          },
+          {
+            internalType: 'bool',
+            name: 'isForProtocol',
+            type: 'bool',
           },
         ],
         indexed: false,
@@ -1578,6 +2060,11 @@ export default [
           },
           {
             internalType: 'string',
+            name: 'originAccount',
+            type: 'string',
+          },
+          {
+            internalType: 'string',
             name: 'destinationAccount',
             type: 'string',
           },
@@ -1595,6 +2082,11 @@ export default [
             internalType: 'bytes',
             name: 'userData',
             type: 'bytes',
+          },
+          {
+            internalType: 'bool',
+            name: 'isForProtocol',
+            type: 'bool',
           },
         ],
         indexed: false,
@@ -1683,6 +2175,11 @@ export default [
           },
           {
             internalType: 'string',
+            name: 'originAccount',
+            type: 'string',
+          },
+          {
+            internalType: 'string',
             name: 'destinationAccount',
             type: 'string',
           },
@@ -1701,6 +2198,11 @@ export default [
             name: 'userData',
             type: 'bytes',
           },
+          {
+            internalType: 'bool',
+            name: 'isForProtocol',
+            type: 'bool',
+          },
         ],
         indexed: false,
         internalType: 'struct IPNetworkHub.Operation',
@@ -1715,10 +2217,54 @@ export default [
     anonymous: false,
     inputs: [
       {
+        indexed: true,
+        internalType: 'uint16',
+        name: 'epoch',
+        type: 'uint16',
+      },
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'sentinel',
+        type: 'address',
+      },
+    ],
+    name: 'SentinelResumed',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: 'uint16',
+        name: 'epoch',
+        type: 'uint16',
+      },
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'sentinel',
+        type: 'address',
+      },
+    ],
+    name: 'SentinelSlashed',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
         indexed: false,
         internalType: 'uint256',
         name: 'nonce',
         type: 'uint256',
+      },
+      {
+        indexed: false,
+        internalType: 'string',
+        name: 'originAccount',
+        type: 'string',
       },
       {
         indexed: false,
@@ -1816,6 +2362,12 @@ export default [
         name: 'optionsMask',
         type: 'bytes32',
       },
+      {
+        indexed: false,
+        internalType: 'bool',
+        name: 'isForProtocol',
+        type: 'bool',
+      },
     ],
     name: 'UserOperation',
     type: 'event',
@@ -1828,6 +2380,45 @@ export default [
         internalType: 'uint256',
         name: '',
         type: 'uint256',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'GOVERNANCE_MESSAGE_GUARDIANS',
+    outputs: [
+      {
+        internalType: 'bytes32',
+        name: '',
+        type: 'bytes32',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'GOVERNANCE_MESSAGE_RESUME_GUARDIAN',
+    outputs: [
+      {
+        internalType: 'bytes32',
+        name: '',
+        type: 'bytes32',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'GOVERNANCE_MESSAGE_RESUME_SENTINEL',
+    outputs: [
+      {
+        internalType: 'bytes32',
+        name: '',
+        type: 'bytes32',
       },
     ],
     stateMutability: 'view',
@@ -1848,12 +2439,25 @@ export default [
   },
   {
     inputs: [],
-    name: 'allowedSourceChainId',
+    name: 'GOVERNANCE_MESSAGE_SLASH_GUARDIAN',
     outputs: [
       {
-        internalType: 'uint32',
+        internalType: 'bytes32',
         name: '',
-        type: 'uint32',
+        type: 'bytes32',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'GOVERNANCE_MESSAGE_SLASH_SENTINEL',
+    outputs: [
+      {
+        internalType: 'bytes32',
+        name: '',
+        type: 'bytes32',
       },
     ],
     stateMutability: 'view',
@@ -1867,6 +2471,47 @@ export default [
         internalType: 'uint32',
         name: '',
         type: 'uint32',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        components: [
+          {
+            internalType: 'uint256',
+            name: 'nonce',
+            type: 'uint256',
+          },
+          {
+            internalType: 'address',
+            name: 'actor',
+            type: 'address',
+          },
+          {
+            internalType: 'address',
+            name: 'challenger',
+            type: 'address',
+          },
+          {
+            internalType: 'uint64',
+            name: 'timestamp',
+            type: 'uint64',
+          },
+        ],
+        internalType: 'struct IPNetworkHub.Challenge',
+        name: 'challenge',
+        type: 'tuple',
+      },
+    ],
+    name: 'challengeIdOf',
+    outputs: [
+      {
+        internalType: 'bytes32',
+        name: '',
+        type: 'bytes32',
       },
     ],
     stateMutability: 'view',
@@ -1948,6 +2593,11 @@ export default [
           },
           {
             internalType: 'string',
+            name: 'originAccount',
+            type: 'string',
+          },
+          {
+            internalType: 'string',
             name: 'destinationAccount',
             type: 'string',
           },
@@ -1965,6 +2615,11 @@ export default [
             internalType: 'bytes',
             name: 'userData',
             type: 'bytes',
+          },
+          {
+            internalType: 'bool',
+            name: 'isForProtocol',
+            type: 'bool',
           },
         ],
         internalType: 'struct IPNetworkHub.Operation',
@@ -1986,6 +2641,54 @@ export default [
       },
     ],
     stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'challengesNonce',
+    outputs: [
+      {
+        internalType: 'uint256',
+        name: '',
+        type: 'uint256',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        components: [
+          {
+            internalType: 'uint256',
+            name: 'nonce',
+            type: 'uint256',
+          },
+          {
+            internalType: 'address',
+            name: 'actor',
+            type: 'address',
+          },
+          {
+            internalType: 'address',
+            name: 'challenger',
+            type: 'address',
+          },
+          {
+            internalType: 'uint64',
+            name: 'timestamp',
+            type: 'uint64',
+          },
+        ],
+        internalType: 'struct IPNetworkHub.Challenge',
+        name: 'challenge',
+        type: 'tuple',
+      },
+    ],
+    name: 'claimLockedAmountStartChallenge',
+    outputs: [],
+    stateMutability: 'nonpayable',
     type: 'function',
   },
   {
@@ -2016,7 +2719,128 @@ export default [
   },
   {
     inputs: [],
+    name: 'feesManager',
+    outputs: [
+      {
+        internalType: 'address',
+        name: '',
+        type: 'address',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        components: [
+          {
+            internalType: 'uint256',
+            name: 'nonce',
+            type: 'uint256',
+          },
+          {
+            internalType: 'address',
+            name: 'actor',
+            type: 'address',
+          },
+          {
+            internalType: 'address',
+            name: 'challenger',
+            type: 'address',
+          },
+          {
+            internalType: 'uint64',
+            name: 'timestamp',
+            type: 'uint64',
+          },
+        ],
+        internalType: 'struct IPNetworkHub.Challenge',
+        name: 'challenge',
+        type: 'tuple',
+      },
+    ],
+    name: 'getChallengeEpoch',
+    outputs: [
+      {
+        internalType: 'uint16',
+        name: '',
+        type: 'uint16',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        components: [
+          {
+            internalType: 'uint256',
+            name: 'nonce',
+            type: 'uint256',
+          },
+          {
+            internalType: 'address',
+            name: 'actor',
+            type: 'address',
+          },
+          {
+            internalType: 'address',
+            name: 'challenger',
+            type: 'address',
+          },
+          {
+            internalType: 'uint64',
+            name: 'timestamp',
+            type: 'uint64',
+          },
+        ],
+        internalType: 'struct IPNetworkHub.Challenge',
+        name: 'challenge',
+        type: 'tuple',
+      },
+    ],
+    name: 'getChallengeStatus',
+    outputs: [
+      {
+        internalType: 'enum IPNetworkHub.ChallengeStatus',
+        name: '',
+        type: 'uint8',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'getCurrentActiveActorsAdjustmentDuration',
+    outputs: [
+      {
+        internalType: 'uint64',
+        name: '',
+        type: 'uint64',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
     name: 'getCurrentChallengePeriodDuration',
+    outputs: [
+      {
+        internalType: 'uint64',
+        name: '',
+        type: 'uint64',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'getCurrentQueuedOperationsAdjustmentDuration',
     outputs: [
       {
         internalType: 'uint64',
@@ -2035,12 +2859,81 @@ export default [
         type: 'uint16',
       },
     ],
-    name: 'getSentinelsRootForEpoch',
+    name: 'getGuardiansMerkleRootForEpoch',
     outputs: [
       {
         internalType: 'bytes32',
         name: '',
         type: 'bytes32',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'getNetworkId',
+    outputs: [
+      {
+        internalType: 'bytes4',
+        name: '',
+        type: 'bytes4',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'uint16',
+        name: 'epoch',
+        type: 'uint16',
+      },
+      {
+        internalType: 'address',
+        name: 'actor',
+        type: 'address',
+      },
+    ],
+    name: 'getPendingChallengeIdByEpochOf',
+    outputs: [
+      {
+        internalType: 'bytes32',
+        name: '',
+        type: 'bytes32',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'uint16',
+        name: 'epoch',
+        type: 'uint16',
+      },
+    ],
+    name: 'getSentinelsMerkleRootForEpoch',
+    outputs: [
+      {
+        internalType: 'bytes32',
+        name: '',
+        type: 'bytes32',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'getTotalNumberOfInactiveActorsForCurrentEpoch',
+    outputs: [
+      {
+        internalType: 'uint16',
+        name: '',
+        type: 'uint16',
       },
     ],
     stateMutability: 'view',
@@ -2122,6 +3015,32 @@ export default [
         internalType: 'uint256',
         name: '',
         type: 'uint256',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'lockedAmountStartChallenge',
+    outputs: [
+      {
+        internalType: 'uint256',
+        name: '',
+        type: 'uint256',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'maxChallengeDuration',
+    outputs: [
+      {
+        internalType: 'uint64',
+        name: '',
+        type: 'uint64',
       },
     ],
     stateMutability: 'view',
@@ -2229,6 +3148,11 @@ export default [
           },
           {
             internalType: 'string',
+            name: 'originAccount',
+            type: 'string',
+          },
+          {
+            internalType: 'string',
             name: 'destinationAccount',
             type: 'string',
           },
@@ -2246,6 +3170,11 @@ export default [
             internalType: 'bytes',
             name: 'userData',
             type: 'bytes',
+          },
+          {
+            internalType: 'bool',
+            name: 'isForProtocol',
+            type: 'bool',
           },
         ],
         internalType: 'struct IPNetworkHub.Operation',
@@ -2340,6 +3269,11 @@ export default [
           },
           {
             internalType: 'string',
+            name: 'originAccount',
+            type: 'string',
+          },
+          {
+            internalType: 'string',
             name: 'destinationAccount',
             type: 'string',
           },
@@ -2357,6 +3291,11 @@ export default [
             internalType: 'bytes',
             name: 'userData',
             type: 'bytes',
+          },
+          {
+            internalType: 'bool',
+            name: 'isForProtocol',
+            type: 'bool',
           },
         ],
         internalType: 'struct IPNetworkHub.Operation',
@@ -2451,6 +3390,11 @@ export default [
           },
           {
             internalType: 'string',
+            name: 'originAccount',
+            type: 'string',
+          },
+          {
+            internalType: 'string',
             name: 'destinationAccount',
             type: 'string',
           },
@@ -2468,6 +3412,11 @@ export default [
             internalType: 'bytes',
             name: 'userData',
             type: 'bytes',
+          },
+          {
+            internalType: 'bool',
+            name: 'isForProtocol',
+            type: 'bool',
           },
         ],
         internalType: 'struct IPNetworkHub.Operation',
@@ -2556,6 +3505,11 @@ export default [
           },
           {
             internalType: 'string',
+            name: 'originAccount',
+            type: 'string',
+          },
+          {
+            internalType: 'string',
             name: 'destinationAccount',
             type: 'string',
           },
@@ -2574,15 +3528,15 @@ export default [
             name: 'userData',
             type: 'bytes',
           },
+          {
+            internalType: 'bool',
+            name: 'isForProtocol',
+            type: 'bool',
+          },
         ],
         internalType: 'struct IPNetworkHub.Operation',
         name: 'operation',
         type: 'tuple',
-      },
-      {
-        internalType: 'bytes',
-        name: 'proof',
-        type: 'bytes',
       },
     ],
     name: 'protocolGovernanceCancelOperation',
@@ -2666,6 +3620,11 @@ export default [
           },
           {
             internalType: 'string',
+            name: 'originAccount',
+            type: 'string',
+          },
+          {
+            internalType: 'string',
             name: 'destinationAccount',
             type: 'string',
           },
@@ -2684,15 +3643,20 @@ export default [
             name: 'userData',
             type: 'bytes',
           },
+          {
+            internalType: 'bool',
+            name: 'isForProtocol',
+            type: 'bool',
+          },
         ],
         internalType: 'struct IPNetworkHub.Operation',
         name: 'operation',
         type: 'tuple',
       },
       {
-        internalType: 'bytes',
+        internalType: 'bytes32[]',
         name: 'proof',
-        type: 'bytes',
+        type: 'bytes32[]',
       },
     ],
     name: 'protocolGuardianCancelOperation',
@@ -2776,6 +3740,11 @@ export default [
           },
           {
             internalType: 'string',
+            name: 'originAccount',
+            type: 'string',
+          },
+          {
+            internalType: 'string',
             name: 'destinationAccount',
             type: 'string',
           },
@@ -2793,6 +3762,11 @@ export default [
             internalType: 'bytes',
             name: 'userData',
             type: 'bytes',
+          },
+          {
+            internalType: 'bool',
+            name: 'isForProtocol',
+            type: 'bool',
           },
         ],
         internalType: 'struct IPNetworkHub.Operation',
@@ -2881,6 +3855,11 @@ export default [
           },
           {
             internalType: 'string',
+            name: 'originAccount',
+            type: 'string',
+          },
+          {
+            internalType: 'string',
             name: 'destinationAccount',
             type: 'string',
           },
@@ -2899,20 +3878,202 @@ export default [
             name: 'userData',
             type: 'bytes',
           },
+          {
+            internalType: 'bool',
+            name: 'isForProtocol',
+            type: 'bool',
+          },
         ],
         internalType: 'struct IPNetworkHub.Operation',
         name: 'operation',
         type: 'tuple',
       },
       {
-        internalType: 'bytes',
+        internalType: 'bytes32[]',
         name: 'proof',
-        type: 'bytes',
+        type: 'bytes32[]',
       },
     ],
     name: 'protocolSentinelCancelOperation',
     outputs: [],
     stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'registry',
+    outputs: [
+      {
+        internalType: 'address',
+        name: '',
+        type: 'address',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        components: [
+          {
+            internalType: 'uint256',
+            name: 'nonce',
+            type: 'uint256',
+          },
+          {
+            internalType: 'address',
+            name: 'actor',
+            type: 'address',
+          },
+          {
+            internalType: 'address',
+            name: 'challenger',
+            type: 'address',
+          },
+          {
+            internalType: 'uint64',
+            name: 'timestamp',
+            type: 'uint64',
+          },
+        ],
+        internalType: 'struct IPNetworkHub.Challenge',
+        name: 'challenge',
+        type: 'tuple',
+      },
+    ],
+    name: 'slashByChallenge',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'slasher',
+    outputs: [
+      {
+        internalType: 'address',
+        name: '',
+        type: 'address',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        components: [
+          {
+            internalType: 'uint256',
+            name: 'nonce',
+            type: 'uint256',
+          },
+          {
+            internalType: 'address',
+            name: 'actor',
+            type: 'address',
+          },
+          {
+            internalType: 'address',
+            name: 'challenger',
+            type: 'address',
+          },
+          {
+            internalType: 'uint64',
+            name: 'timestamp',
+            type: 'uint64',
+          },
+        ],
+        internalType: 'struct IPNetworkHub.Challenge',
+        name: 'challenge',
+        type: 'tuple',
+      },
+      {
+        internalType: 'bytes32[]',
+        name: 'proof',
+        type: 'bytes32[]',
+      },
+    ],
+    name: 'solveChallengeGuardian',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        components: [
+          {
+            internalType: 'uint256',
+            name: 'nonce',
+            type: 'uint256',
+          },
+          {
+            internalType: 'address',
+            name: 'actor',
+            type: 'address',
+          },
+          {
+            internalType: 'address',
+            name: 'challenger',
+            type: 'address',
+          },
+          {
+            internalType: 'uint64',
+            name: 'timestamp',
+            type: 'uint64',
+          },
+        ],
+        internalType: 'struct IPNetworkHub.Challenge',
+        name: 'challenge',
+        type: 'tuple',
+      },
+      {
+        internalType: 'bytes32[]',
+        name: 'proof',
+        type: 'bytes32[]',
+      },
+    ],
+    name: 'solveChallengeSentinel',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'address',
+        name: 'guardian',
+        type: 'address',
+      },
+      {
+        internalType: 'bytes32[]',
+        name: 'proof',
+        type: 'bytes32[]',
+      },
+    ],
+    name: 'startChallengeGuardian',
+    outputs: [],
+    stateMutability: 'payable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'address',
+        name: 'sentinel',
+        type: 'address',
+      },
+      {
+        internalType: 'bytes32[]',
+        name: 'proof',
+        type: 'bytes32[]',
+      },
+    ],
+    name: 'startChallengeSentinel',
+    outputs: [],
+    stateMutability: 'payable',
     type: 'function',
   },
   {

@@ -11,6 +11,12 @@ export default [
       {
         indexed: false,
         internalType: 'string',
+        name: 'originAccount',
+        type: 'string',
+      },
+      {
+        indexed: false,
+        internalType: 'string',
         name: 'destinationAccount',
         type: 'string',
       },
@@ -64,6 +70,36 @@ export default [
       },
       {
         indexed: false,
+        internalType: 'address',
+        name: 'protocolFeeAssetTokenAddress',
+        type: 'address',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'protocolFeeAssetAmount',
+        type: 'uint256',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'networkFeeAssetAmount',
+        type: 'uint256',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'forwardNetworkFeeAssetAmount',
+        type: 'uint256',
+      },
+      {
+        indexed: false,
+        internalType: 'bytes4',
+        name: 'forwardDestinationNetworkId',
+        type: 'bytes4',
+      },
+      {
+        indexed: false,
         internalType: 'bytes',
         name: 'userData',
         type: 'bytes',
@@ -73,6 +109,12 @@ export default [
         internalType: 'bytes32',
         name: 'optionsMask',
         type: 'bytes32',
+      },
+      {
+        indexed: false,
+        internalType: 'bool',
+        name: 'isForProtocol',
+        type: 'bool',
       },
     ],
     name: 'UserOperation',
@@ -114,6 +156,21 @@ export default [
             type: 'uint256',
           },
           {
+            internalType: 'uint256',
+            name: 'protocolFeeAssetAmount',
+            type: 'uint256',
+          },
+          {
+            internalType: 'uint256',
+            name: 'networkFeeAssetAmount',
+            type: 'uint256',
+          },
+          {
+            internalType: 'uint256',
+            name: 'forwardNetworkFeeAssetAmount',
+            type: 'uint256',
+          },
+          {
             internalType: 'address',
             name: 'underlyingAssetTokenAddress',
             type: 'address',
@@ -130,8 +187,18 @@ export default [
           },
           {
             internalType: 'bytes4',
+            name: 'forwardDestinationNetworkId',
+            type: 'bytes4',
+          },
+          {
+            internalType: 'bytes4',
             name: 'underlyingAssetNetworkId',
             type: 'bytes4',
+          },
+          {
+            internalType: 'string',
+            name: 'originAccount',
+            type: 'string',
           },
           {
             internalType: 'string',
@@ -153,9 +220,14 @@ export default [
             name: 'userData',
             type: 'bytes',
           },
+          {
+            internalType: 'bool',
+            name: 'isForProtocol',
+            type: 'bool',
+          },
         ],
         indexed: false,
-        internalType: 'struct IStateManager.Operation',
+        internalType: 'struct IPNetworkHub.Operation',
         name: 'operation',
         type: 'tuple',
       },
@@ -199,6 +271,21 @@ export default [
             type: 'uint256',
           },
           {
+            internalType: 'uint256',
+            name: 'protocolFeeAssetAmount',
+            type: 'uint256',
+          },
+          {
+            internalType: 'uint256',
+            name: 'networkFeeAssetAmount',
+            type: 'uint256',
+          },
+          {
+            internalType: 'uint256',
+            name: 'forwardNetworkFeeAssetAmount',
+            type: 'uint256',
+          },
+          {
             internalType: 'address',
             name: 'underlyingAssetTokenAddress',
             type: 'address',
@@ -215,8 +302,18 @@ export default [
           },
           {
             internalType: 'bytes4',
+            name: 'forwardDestinationNetworkId',
+            type: 'bytes4',
+          },
+          {
+            internalType: 'bytes4',
             name: 'underlyingAssetNetworkId',
             type: 'bytes4',
+          },
+          {
+            internalType: 'string',
+            name: 'originAccount',
+            type: 'string',
           },
           {
             internalType: 'string',
@@ -238,9 +335,14 @@ export default [
             name: 'userData',
             type: 'bytes',
           },
+          {
+            internalType: 'bool',
+            name: 'isForProtocol',
+            type: 'bool',
+          },
         ],
         indexed: false,
-        internalType: 'struct IStateManager.Operation',
+        internalType: 'struct IPNetworkHub.Operation',
         name: 'operation',
         type: 'tuple',
       },
@@ -284,6 +386,21 @@ export default [
             type: 'uint256',
           },
           {
+            internalType: 'uint256',
+            name: 'protocolFeeAssetAmount',
+            type: 'uint256',
+          },
+          {
+            internalType: 'uint256',
+            name: 'networkFeeAssetAmount',
+            type: 'uint256',
+          },
+          {
+            internalType: 'uint256',
+            name: 'forwardNetworkFeeAssetAmount',
+            type: 'uint256',
+          },
+          {
             internalType: 'address',
             name: 'underlyingAssetTokenAddress',
             type: 'address',
@@ -300,8 +417,18 @@ export default [
           },
           {
             internalType: 'bytes4',
+            name: 'forwardDestinationNetworkId',
+            type: 'bytes4',
+          },
+          {
+            internalType: 'bytes4',
             name: 'underlyingAssetNetworkId',
             type: 'bytes4',
+          },
+          {
+            internalType: 'string',
+            name: 'originAccount',
+            type: 'string',
           },
           {
             internalType: 'string',
@@ -323,9 +450,14 @@ export default [
             name: 'userData',
             type: 'bytes',
           },
+          {
+            internalType: 'bool',
+            name: 'isForProtocol',
+            type: 'bool',
+          },
         ],
         indexed: false,
-        internalType: 'struct IStateManager.Operation',
+        internalType: 'struct IPNetworkHub.Operation',
         name: 'operation',
         type: 'tuple',
       },
