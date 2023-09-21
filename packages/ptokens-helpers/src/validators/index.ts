@@ -12,6 +12,7 @@ export const chainIdToAddressValidatorMap: Map<NetworkId, (_address: string) => 
   [NetworkId.ArbitrumMainnet, validatorFunction('eth')],
   [NetworkId.GnosisMainnet, validatorFunction('eth')],
   [NetworkId.PolygonMainnet, validatorFunction('eth')],
+  [NetworkId.BscMainnet, validatorFunction('eth')],
 ])
 
 export function isValidAddressByChainId(_address: string, _networkId: NetworkId) {

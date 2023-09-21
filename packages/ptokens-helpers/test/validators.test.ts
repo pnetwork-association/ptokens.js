@@ -32,6 +32,7 @@ describe('isValidAddressByChainId', () => {
     [NetworkId.ArbitrumMainnet, evmAddresses],
     [NetworkId.GnosisMainnet, evmAddresses],
     [NetworkId.PolygonMainnet, evmAddresses],
+    [NetworkId.BscMainnet, evmAddresses],
   ])
 
   test('Should correctly check address validity', () => {

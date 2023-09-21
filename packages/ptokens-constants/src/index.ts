@@ -4,6 +4,7 @@ export enum NetworkId {
   ArbitrumMainnet = '0xfc8ebb2b',
   GnosisMainnet = '0xd41b1c5b',
   PolygonMainnet = '0xf9b459a1',
+  BscMainnet = '0x5aca268b',
 }
 
 export enum BlockchainType {
@@ -19,6 +20,7 @@ export const networkIdToTypeMap = new Map<string, BlockchainType>([
   [NetworkId.ArbitrumMainnet, BlockchainType.EVM],
   [NetworkId.GnosisMainnet, BlockchainType.EVM],
   [NetworkId.PolygonMainnet, BlockchainType.EVM],
+  [NetworkId.BscMainnet, BlockchainType.EVM],
 ])
 
 export enum Blockchain {
