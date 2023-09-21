@@ -1,12 +1,15 @@
+import { sha256 } from '@noble/hashes/sha256'
 import BigNumber from 'bignumber.js'
 import { NetworkId } from 'ptokens-constants'
 import { PublicClient, keccak256, Abi } from 'viem'
 import { Web3, Log, TransactionReceipt } from 'web3'
 import { encodeEventSignature, decodeLog, encodeParameters } from 'web3-eth-abi'
 import { AbiEventFragment, ContractAbi } from 'web3-types'
-import { keccak256 } from 'web3-utils'
+import { hexToBytes, bytesToHex } from 'web3-utils'
 
-import events from '../abi/events'
+import pNetworkHubAbi from '../abi/PNetworkHubAbi'
+
+const events = pNetworkHubAbi.filter(({ type }) => type === 'event') as AbiEventFragment[]
 
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
@@ -52,45 +55,130 @@ export const eventNameToSignatureMap = new Map<string, string>(
 const topicToAbiMap = new Map(
   events.map((_event) => {
     const signature = eventNameToSignatureMap.get(_event.name)
-    return [signature, _event as AbiEventFragment]
+    return [signature, _event]
   }),
 )
 
+// event UserOperation(
+//   uint256 nonce,
+//   string originAccount,
+//   string destinationAccount,
+//   bytes4 destinationNetworkId,
+//   string underlyingAssetName,
+//   string underlyingAssetSymbol,
+//   uint256 underlyingAssetDecimals,
+//   address underlyingAssetTokenAddress,
+//   bytes4 underlyingAssetNetworkId,
+//   address assetTokenAddress,
+//   uint256 assetAmount,
+//   address protocolFeeAssetTokenAddress,
+//   uint256 protocolFeeAssetAmount,
+//   uint256 networkFeeAssetAmount,
+//   uint256 forwardNetworkFeeAssetAmount,
+//   bytes4 forwardDestinationNetworkId,
+//   bytes userData,
+//   bytes32 optionsMask,
+//   bool isForProtocol
+// );
+
+// struct Operation {
+//   bytes32 originBlockHash;
+//   bytes32 originTransactionHash;
+//   bytes4 originNetworkId;
+//   uint256 nonce;
+//   string originAccount;
+//   string destinationAccount;
+//   bytes4 destinationNetworkId;
+//   bytes4 forwardDestinationNetworkId;
+//   string underlyingAssetName;
+//   string underlyingAssetSymbol;
+//   uint256 underlyingAssetDecimals;
+//   address underlyingAssetTokenAddress;
+//   bytes4 underlyingAssetNetworkId;
+//   uint256 assetAmount;
+//   uint256 protocolFeeAssetAmount;
+//   uint256 networkFeeAssetAmount;
+//   uint256 forwardNetworkFeeAssetAmount;
+//   bytes userData;
+//   bytes32 optionsMask;
+//   bool isForProtocol;
+// }
+
+// function operationIdOf(Operation calldata operation) public pure returns (bytes32) {
+//   return
+//       sha256(
+//           abi.encode(
+//               operation.originBlockHash,
+//               operation.originTransactionHash,
+//               operation.originNetworkId,
+//               operation.nonce,
+//               operation.originAccount,
+//               operation.destinationAccount,
+//               operation.destinationNetworkId,
+//               operation.forwardDestinationNetworkId,
+//               operation.underlyingAssetName,
+//               operation.underlyingAssetSymbol,
+//               operation.underlyingAssetDecimals,
+//               operation.underlyingAssetTokenAddress,
+//               operation.underlyingAssetNetworkId,
+//               operation.assetAmount,
+//               operation.protocolFeeAssetAmount,
+//               operation.networkFeeAssetAmount,
+//               operation.forwardNetworkFeeAssetAmount,
+//               operation.userData,
+//               operation.optionsMask,
+//               operation.isForProtocol
+//           )
+//       );
+// }
+
 const getOperationIdFromObj = (_obj: any) => {
   const types = [
-    'bytes32',
-    'bytes32',
-    'bytes4',
-    'uint256',
-    'string',
-    'bytes4',
-    'string',
-    'string',
-    'uint256',
-    'address',
-    'bytes4',
-    'uint256',
-    'bytes',
-    'bytes32',
+    'bytes32', // operation.originBlockHash,
+    'bytes32', // operation.originTransactionHash,
+    'bytes4', // operation.originNetworkId,
+    'uint256', // operation.nonce,
+    'string', // operation.originAccount,
+    'string', // operation.destinationAccount,
+    'bytes4', // operation.destinationNetworkId,
+    'bytes4', // operation.forwardDestinationNetworkId,
+    'string', // operation.underlyingAssetName,
+    'string', // operation.underlyingAssetSymbol,
+    'uint256', // operation.underlyingAssetDecimals,
+    'address', // operation.underlyingAssetTokenAddress,
+    'bytes4', // operation.underlyingAssetNetworkId,
+    'uint256', // operation.assetAmount,
+    'uint256', // operation.protocolFeeAssetAmount,
+    'uint256', // operation.networkFeeAssetAmount,
+    'uint256', // operation.forwardNetworkFeeAssetAmount,
+    'bytes', // operation.userData,
+    'bytes32', // operation.optionsMask,
+    'bool', // operation.isForProtocol
   ]
-  return keccak256(
-    encodeParameters(types, [
-      _obj.originatingBlockHash || _obj.originBlockHash || _obj.blockHash,
-      _obj.originatingTransactionHash || _obj.originTransactionHash || _obj.transactionHash,
-      _obj.originatingNetworkId || _obj.originNetworkId || _obj.networkId,
-      _obj.nonce,
-      _obj.destinationAccount,
-      _obj.destinationNetworkId,
-      _obj.underlyingAssetName,
-      _obj.underlyingAssetSymbol,
-      _obj.underlyingAssetDecimals,
-      _obj.underlyingAssetTokenAddress,
-      _obj.underlyingAssetNetworkId,
-      _obj.assetAmount,
-      _obj.userData || '0x',
-      _obj.optionsMask,
-    ]),
-  )
+
+  const coded = encodeParameters(types, [
+    _obj.originatingBlockHash || _obj.originBlockHash || _obj.blockHash,
+    _obj.originatingTransactionHash || _obj.originTransactionHash || _obj.transactionHash,
+    _obj.originatingNetworkId || _obj.originNetworkId || _obj.networkId,
+    _obj.nonce,
+    _obj.originAccount,
+    _obj.destinationAccount,
+    _obj.destinationNetworkId,
+    _obj.forwardDestinationNetworkId,
+    _obj.underlyingAssetName,
+    _obj.underlyingAssetSymbol,
+    _obj.underlyingAssetDecimals,
+    _obj.underlyingAssetTokenAddress,
+    _obj.underlyingAssetNetworkId,
+    _obj.assetAmount,
+    _obj.protocolFeeAssetAmount,
+    _obj.networkFeeAssetAmount,
+    _obj.forwardNetworkFeeAssetAmount,
+    _obj.userData || '0x',
+    _obj.optionsMask,
+    _obj.isForProtocol,
+  ])
+  return bytesToHex(sha256(hexToBytes(coded)))
 }
 
 const getEventInputsFromSignature = (_signature: string) => {

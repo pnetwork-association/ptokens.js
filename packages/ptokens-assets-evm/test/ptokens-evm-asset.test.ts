@@ -4,7 +4,6 @@ import { Blockchain, NetworkId, Network } from 'ptokens-constants'
 import { TransactionReceipt } from 'web3-types'
 
 import { pTokensEvmAsset, pTokensEvmProvider } from '../src'
-import pFactoryAbi from '../src/abi/PFactoryAbi'
 import pNetworkHubAbi from '../src/abi/PNetworkHubAbi'
 
 import receipt from './utils/receiptUserSend.json'
@@ -85,7 +84,7 @@ describe('EVM asset', () => {
       const asset = new pTokensEvmAsset({
         provider: provider,
         assetInfo: {
-          networkId: NetworkId.SepoliaTestnet,
+          networkId: NetworkId.BscMainnet,
           symbol: 'pSYM',
           assetTokenAddress: 'asset-token-address',
           decimals: 18,
@@ -109,12 +108,12 @@ describe('EVM asset', () => {
         })
       expect(txHashBroadcasted).toEqual({ txHash: 'tx-hash' })
       expect(swapResultConfirmed).toEqual({
-        operationId: '0xc6cc8381b3a70dc38c587d6c5518d72edb05b4040acbd4251fe6b67acff7f986',
-        txHash: '0xcd5f6d7d2aabd3af5269459b6310892f4e56aa0cfd05024ba16bcf901c9bccd2',
+        operationId: '0xc361a4c64bfa54d847d94db4ec4130d0e200585f13e7f1658b75fafcac9e1b53',
+        txHash: '0xeadd7dcd6beae94fceac5322937fb9994ee32e25cc12a54959eadc0d5b36e7ca',
       })
       expect(ret).toEqual({
-        operationId: '0xc6cc8381b3a70dc38c587d6c5518d72edb05b4040acbd4251fe6b67acff7f986',
-        txHash: '0xcd5f6d7d2aabd3af5269459b6310892f4e56aa0cfd05024ba16bcf901c9bccd2',
+        operationId: '0xc361a4c64bfa54d847d94db4ec4130d0e200585f13e7f1658b75fafcac9e1b53',
+        txHash: '0xeadd7dcd6beae94fceac5322937fb9994ee32e25cc12a54959eadc0d5b36e7ca',
       })
       expect(makeContractSendSpy).toHaveBeenNthCalledWith(
         1,
