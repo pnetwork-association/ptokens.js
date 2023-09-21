@@ -2,20 +2,11 @@ import polling from 'light-async-polling'
 import PromiEvent from 'promievent'
 import { pTokensAssetProvider } from 'ptokens-entities'
 import { stringUtils } from 'ptokens-helpers'
-import {
-  DEFAULT_RETURN_FORMAT,
-  Web3,
-  TransactionReceipt,
-  Log,
-  ContractAbi,
-  SupportedProviders,
-  EthExecutionAPI,
-} from 'web3'
-import { SendTransactionEvents } from 'web3/lib/commonjs/eth.exports'
-import { Web3PromiEvent } from 'web3-core'
-import { PayableTxOptions } from 'web3-eth-contract'
+import { Abi, PublicClient, WalletClient, TransactionReceipt } from 'viem'
+import events from './abi/events'
+// import { privateKeyToAccount } from 'viem/accounts'
 
-import { EVENT_NAMES, eventNameToSignatureMap, getAccount, getContract, getOperationIdFromLog } from './lib/'
+import { EVENT_NAMES, getOperationIdFromLog } from './lib/'
 
 const BLOCK_OFFSET = 1000
 
@@ -23,7 +14,7 @@ export type MakeContractSendOptions = {
   /** The method to be called. */
   method: string
   /** The contract ABI. */
-  abi: ContractAbi
+  abi: Abi
   /** The contract address. */
   contractAddress: string
   /** The value being sent with the transaction. */
@@ -36,32 +27,36 @@ export type MakeContractCallOptions = {
   /** The method to be called. */
   method: string
   /** The contract ABI. */
-  abi: ContractAbi
+  abi: Abi
   /** The contract address. */
   contractAddress: string
 }
 
-class SendOptions implements PayableTxOptions {
-  from: string
-  value: string
-  gasPrice: string
-  gas: string
-  constructor(from: string, value: string) {
-    this.from = from
-    this.value = value
-  }
-  maybeSetGasPrice(gasPrice: number) {
-    if (gasPrice) this.gasPrice = gasPrice.toString()
-    return this
-  }
-  maybeSetGasLimit(gasLimit: number) {
-    if (gasLimit) this.gas = gasLimit.toString()
-    return this
-  }
-}
+// class SendObject<T> {
+//   account: `0x${string}`
+//   address: `0x${string}`
+//   abi: Abi
+//   functionName: string
+//   value: string
+//   gasPrice: string
+//   gas: string
+//   args: [] | T
+//   constructor(value: string) {
+//     this.value = value
+//   }
+//   maybeSetGasPrice(account: `0x${string}`, address:`0x${string}`, gasPrice: number) {
+//     if (gasPrice) this.gasPrice = gasPrice.toString()
+//     return this
+//   }
+//   maybeSetGasLimit(gasLimit: number) {
+//     if (gasLimit) this.gas = gasLimit.toString()
+//     return this
+//   }
+// }
 
 export class pTokensEvmProvider implements pTokensAssetProvider {
-  private _web3: Web3
+  private _publicClient: PublicClient
+  private _walletClient: WalletClient
   private _gasPrice: number
   private _gasLimit: number
 
@@ -69,8 +64,9 @@ export class pTokensEvmProvider implements pTokensAssetProvider {
    * Create and initialize a pTokensEvmProvider object.
    * @param _provider - A web3.js provider (refer to https://web3js.readthedocs.io/en/v1.8.0/web3.html#setprovider).
    */
-  constructor(_provider: string | SupportedProviders<EthExecutionAPI>) {
-    this._web3 = new Web3(_provider)
+  constructor(_publicClient: PublicClient, _walletClient: WalletClient) {
+    this._publicClient = _publicClient
+    this._walletClient = _walletClient
   }
 
   /**
@@ -119,19 +115,17 @@ export class pTokensEvmProvider implements pTokensAssetProvider {
    * @returns The same provider. This allows methods chaining.
    */
   setPrivateKey(_key: string) {
-    const account = this._web3.eth.accounts.privateKeyToAccount(stringUtils.addHexPrefix(_key))
-    this._web3.eth.accounts.wallet.add(account)
-    this._web3.eth.defaultAccount = account.address
+    // TODO
     return this
   }
 
   async getLatestBlockNumber() {
-    const block = await this._web3.eth.getBlock('latest')
+    const block = await this._publicClient.getBlock({ blockTag: 'latest'})
     return block.number
   }
 
   async getTransactionReceipt(_hash: string) {
-    const receipt = await this._web3.eth.getTransactionReceipt(_hash)
+    const receipt = await this._publicClient.getTransactionReceipt({ hash: stringUtils.addHexPrefix(_hash)})
     return receipt
   }
 
@@ -153,30 +147,24 @@ export class pTokensEvmProvider implements pTokensAssetProvider {
         (async () => {
           try {
             const { method, abi, contractAddress, value, gasLimit } = _options
-            const account = await getAccount(this._web3)
-            const contract = getContract(this._web3, abi, contractAddress, account)
-            const b = contract.methods[method] as (...args: T | []) => {
-              send: (
-                opts?: PayableTxOptions,
-              ) => Web3PromiEvent<TransactionReceipt, SendTransactionEvents<typeof DEFAULT_RETURN_FORMAT>>
-            }
-            const receipt = b(..._args)
-              .send(
-                new SendOptions(account, value)
-                  .maybeSetGasLimit(gasLimit || this.gasLimit)
-                  .maybeSetGasPrice(this.gasPrice),
-              )
-              .once('transactionHash', (_hash) => {
-                promi.emit('txBroadcasted', _hash)
-              })
-              .once('receipt', (_receipt) => {
-                promi.emit('txConfirmed', _receipt)
-              })
-              .once('error', (_error) => {
-                promi.emit('txError', _error)
-              })
-            return resolve(receipt)
+            const [account] = await this._walletClient.getAddresses()
+            const { request } = await this._publicClient.simulateContract({
+              account,
+              address: stringUtils.addHexPrefix(contractAddress),
+              abi: abi,
+              functionName: method,
+              value: value,
+              args: _args,
+              gas: (gasLimit || this.gasLimit) ? (gasLimit || this.gasLimit) : undefined,
+              gasPrice: this.gasPrice ? this.gasPrice : undefined
+            })
+            const txHash = await this._walletClient.writeContract(request as any)
+            promi.emit('txBroadcasted', txHash)
+            const txReceipt = await this._publicClient.waitForTransactionReceipt({ hash: txHash })
+            promi.emit('txConfirmed', txReceipt)
+            return resolve(txReceipt)
           } catch (_err) {
+            promi.emit('txError', _err)
             return reject(_err)
           }
         })() as unknown,
@@ -196,10 +184,12 @@ export class pTokensEvmProvider implements pTokensAssetProvider {
     _args: T | [] = [],
   ): Promise<R> {
     const { method, abi, contractAddress } = _options
-    const account = await getAccount(this._web3)
-    const contract = getContract(this._web3, abi, contractAddress, account)
-    const b = contract.methods[method] as (...args: T | []) => { call: () => Promise<R> }
-    return b(..._args).call()
+    return this._publicClient.readContract({
+      address: stringUtils.addHexPrefix(contractAddress),
+      abi: abi,
+      functionName: method,
+      args: _args
+    }) as Promise<R>
   }
 
   async waitForTransactionConfirmation(_tx: string, _pollingTime = 1000) {
@@ -207,7 +197,7 @@ export class pTokensEvmProvider implements pTokensAssetProvider {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     await polling(async () => {
       try {
-        receipt = await this._web3.eth.getTransactionReceipt(_tx)
+        receipt = await this._publicClient.getTransactionReceipt({ hash: stringUtils.addHexPrefix(_tx) })
         if (!receipt) return false
         else if (receipt.status) return true
         else return false
@@ -225,15 +215,15 @@ export class pTokensEvmProvider implements pTokensAssetProvider {
     _operationId: string,
     _pollingTime = 1000,
   ) {
-    let log: Log
+    let log
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     await polling(async () => {
       try {
-        const logs = (await this._web3.eth.getPastLogs({
+        const logs = await this._publicClient.getLogs({
           fromBlock: _fromBlock,
-          address: _hubAddress,
-          topics: [eventNameToSignatureMap.get(_eventName)],
-        })) as Log[]
+          address: stringUtils.addHexPrefix(_hubAddress),
+          events: events,
+        })
         log = logs.find((_log) => getOperationIdFromLog(_log) === _operationId)
         if (log) return true
         return false

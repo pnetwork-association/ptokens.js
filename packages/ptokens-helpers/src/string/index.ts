@@ -6,8 +6,8 @@ export function isHexPrefixed(_string: string) {
   return _string.slice(0, 2).toLocaleLowerCase() === HEX_PREFIX
 }
 
-export function addHexPrefix(_string: string) {
-  return isHexPrefixed(_string) ? _string : HEX_PREFIX + _string
+export function addHexPrefix(_string: string): `0x${string}` {
+  return isHexPrefixed(_string) ? _string as `0x${string}` : HEX_PREFIX + _string as `0x${string}`
 }
 
 export function removeHexPrefix(_string: string) {

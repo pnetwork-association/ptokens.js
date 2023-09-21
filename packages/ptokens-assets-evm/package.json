@@ -19,7 +19,7 @@
     "ptokens-constants": "file:../ptokens-constants",
     "ptokens-entities": "file:../ptokens-entities",
     "ptokens-helpers": "file:../ptokens-helpers",
-    "web3": "^4.0.3"
+    "viem": "^1.11.1"
   },
   "typedoc": {
     "entryPoint": "./src/index.ts",

@@ -1,5 +1,6 @@
 import BigNumber from 'bignumber.js'
 import { NetworkId } from 'ptokens-constants'
+import { PublicClient, keccak256, Abi } from 'viem'
 import { Web3, Log, TransactionReceipt } from 'web3'
 import { encodeEventSignature, decodeLog, encodeParameters } from 'web3-eth-abi'
 import { AbiEventFragment, ContractAbi } from 'web3-types'
@@ -17,20 +18,20 @@ export function offChainFormat(_amount: BigNumber.Value, _decimals: number) {
   return BigNumber(_amount).dividedBy(BigNumber(10).pow(_decimals))
 }
 
-export async function getAccount(_web3: Web3): Promise<string> {
-  if (_web3.eth.defaultAccount) return _web3.eth.defaultAccount
-  const accounts = await _web3.eth.getAccounts()
-  return accounts[0]
-}
+// export async function getAccount(_web3: Web3): Promise<string> {
+//   if (_web3.eth.defaultAccount) return _web3.eth.defaultAccount
+//   const accounts = await _web3.eth.getAccounts()
+//   return accounts[0]
+// }
 
-export function getContract(_web3: Web3, _abi: ContractAbi, _contractAddress: string, _account: string = undefined) {
-  const contract = new _web3.eth.Contract(_abi, _contractAddress)
-  contract.defaultAccount = _account
-  return contract
-}
+// export function getContract(_web3: Web3, _abi: Abi, _contractAddress: string, _account: string = undefined) {
+//   const contract = new _web3.eth.Contract(_abi, _contractAddress)
+//   contract.defaultAccount = _account
+//   return contract
+// }
 
-export async function getGasLimit(_web3: Web3) {
-  const block = await _web3.eth.getBlock('latest')
+export async function getGasLimit(_publicClient: PublicClient) {
+  const block = await _publicClient.getBlock({blockTag: 'latest'})
   return block.gasLimit
 }
 
