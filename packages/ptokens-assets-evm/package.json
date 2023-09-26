@@ -20,10 +20,17 @@
     "ptokens-constants": "file:../ptokens-constants",
     "ptokens-entities": "file:../ptokens-entities",
     "ptokens-helpers": "file:../ptokens-helpers",
-    "viem": "^1.11.1"
+    "viem": "^1.12.2"
   },
   "typedoc": {
     "entryPoint": "./src/index.ts",
     "displayName": "pTokens EVM asset"
-  }
+  },
+  "description": "This package permits to create a `pTokensEvmAsset` object for creating a swap.",
+  "directories": {
+    "doc": "docs",
+    "test": "test"
+  },
+  "author": "Alain Olivier",
+  "license": "ISC"
 }

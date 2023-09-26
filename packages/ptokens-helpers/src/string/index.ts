@@ -7,7 +7,7 @@ export function isHexPrefixed(_string: string) {
 }
 
 export function addHexPrefix(_string: string): `0x${string}` {
-  return isHexPrefixed(_string) ? _string as `0x${string}` : HEX_PREFIX + _string as `0x${string}`
+  return isHexPrefixed(_string) ? (_string as `0x${string}`) : ((HEX_PREFIX + _string) as `0x${string}`)
 }
 
 export function removeHexPrefix(_string: string) {

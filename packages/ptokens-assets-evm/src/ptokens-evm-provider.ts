@@ -2,7 +2,8 @@ import polling from 'light-async-polling'
 import PromiEvent from 'promievent'
 import { pTokensAssetProvider } from 'ptokens-entities'
 import { stringUtils } from 'ptokens-helpers'
-import { Abi, PublicClient, WalletClient, TransactionReceipt } from 'viem'
+import { Abi, Log, PublicClient, WalletClient, TransactionReceipt } from 'viem'
+
 import events from './abi/events'
 // import { privateKeyToAccount } from 'viem/accounts'
 
@@ -120,12 +121,12 @@ export class pTokensEvmProvider implements pTokensAssetProvider {
   }
 
   async getLatestBlockNumber() {
-    const block = await this._publicClient.getBlock({ blockTag: 'latest'})
+    const block = await this._publicClient.getBlock({ blockTag: 'latest' })
     return block.number
   }
 
   async getTransactionReceipt(_hash: string) {
-    const receipt = await this._publicClient.getTransactionReceipt({ hash: stringUtils.addHexPrefix(_hash)})
+    const receipt = await this._publicClient.getTransactionReceipt({ hash: stringUtils.addHexPrefix(_hash) })
     return receipt
   }
 
@@ -153,14 +154,15 @@ export class pTokensEvmProvider implements pTokensAssetProvider {
               address: stringUtils.addHexPrefix(contractAddress),
               abi: abi,
               functionName: method,
-              value: value,
+              value: BigInt(value),
               args: _args,
-              gas: (gasLimit || this.gasLimit) ? (gasLimit || this.gasLimit) : undefined,
-              gasPrice: this.gasPrice ? this.gasPrice : undefined
+              gas: gasLimit || this.gasLimit ? BigInt(gasLimit || this.gasLimit) : undefined,
+              gasPrice: this.gasPrice ? BigInt(this.gasPrice) : undefined,
             })
-            const txHash = await this._walletClient.writeContract(request as any)
+            const txHash = await this._walletClient.writeContract(request)
             promi.emit('txBroadcasted', txHash)
-            const txReceipt = await this._publicClient.waitForTransactionReceipt({ hash: txHash })
+            await this._publicClient.waitForTransactionReceipt({ hash: txHash })
+            const txReceipt = await this._publicClient.getTransactionReceipt({ hash: txHash })
             promi.emit('txConfirmed', txReceipt)
             return resolve(txReceipt)
           } catch (_err) {
@@ -188,24 +190,15 @@ export class pTokensEvmProvider implements pTokensAssetProvider {
       address: stringUtils.addHexPrefix(contractAddress),
       abi: abi,
       functionName: method,
-      args: _args
+      args: _args,
     }) as Promise<R>
   }
 
-  async waitForTransactionConfirmation(_tx: string, _pollingTime = 1000) {
-    let receipt: TransactionReceipt = null
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    await polling(async () => {
-      try {
-        receipt = await this._publicClient.getTransactionReceipt({ hash: stringUtils.addHexPrefix(_tx) })
-        if (!receipt) return false
-        else if (receipt.status) return true
-        else return false
-      } catch (_err) {
-        return false
-      }
-    }, _pollingTime)
-    return receipt.transactionHash.toString()
+  async waitForTransactionConfirmation(_tx: string) {
+    const hash = stringUtils.addHexPrefix(_tx)
+    await this._publicClient.waitForTransactionReceipt({ hash })
+    const receipt = await this._publicClient.getTransactionReceipt({ hash })
+    return receipt.transactionHash as string
   }
 
   protected async _pollForHubOperation(
@@ -215,7 +208,7 @@ export class pTokensEvmProvider implements pTokensAssetProvider {
     _operationId: string,
     _pollingTime = 1000,
   ) {
-    let log
+    let log: Log | undefined
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     await polling(async () => {
       try {
@@ -224,8 +217,11 @@ export class pTokensEvmProvider implements pTokensAssetProvider {
           address: stringUtils.addHexPrefix(_hubAddress),
           events: events,
         })
-        log = logs.find((_log) => getOperationIdFromLog(_log) === _operationId)
-        if (log) return true
+        const ret = logs.find((_log) => getOperationIdFromLog(_log) === _operationId)
+        if (ret) {
+          log = ret
+          return true
+        }
         return false
       } catch (_err) {
         return false
@@ -242,14 +238,14 @@ export class pTokensEvmProvider implements pTokensAssetProvider {
             const fromBlock = (await this.getLatestBlockNumber()) - BigInt(BLOCK_OFFSET)
             await this._pollForHubOperation(_hubAddress, EVENT_NAMES.OPERATION_QUEUED, fromBlock, _operationId).then(
               (_log) => {
-                promi.emit('operationQueued', _log.transactionHash)
+                _log && promi.emit('operationQueued', _log.transactionHash)
                 return _log
               },
             )
             const finalTxLog = await Promise.any([
               this._pollForHubOperation(_hubAddress, EVENT_NAMES.OPERATION_EXECUTED, fromBlock, _operationId).then(
                 (_log) => {
-                  promi.emit('operationExecuted', _log.transactionHash)
+                  _log && promi.emit('operationExecuted', _log.transactionHash)
                   return _log
                 },
               ),
@@ -264,7 +260,7 @@ export class pTokensEvmProvider implements pTokensAssetProvider {
               //   return _log
               // }),
             ])
-            return resolve(finalTxLog.transactionHash.toString())
+            return resolve(finalTxLog ? finalTxLog.transactionHash?.toString() : '')
           } catch (_err) {
             return reject(_err)
           }
