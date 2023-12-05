@@ -2,6 +2,7 @@
   "include": ["src/index.ts"],
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "strict": true,
     "declaration": true,
     "declarationDir": "./types"
   }

@@ -27,11 +27,10 @@ describe('isValidAddressByChainId', () => {
   ]
 
   const addressesToCheck = new Map<NetworkId, { address: string; expected: boolean }[]>([
-    [NetworkId.SepoliaTestnet, evmAddresses],
-    [NetworkId.GoerliTestnet, evmAddresses],
     [NetworkId.ArbitrumMainnet, evmAddresses],
     [NetworkId.GnosisMainnet, evmAddresses],
     [NetworkId.PolygonMainnet, evmAddresses],
+    [NetworkId.BscMainnet, evmAddresses],
   ])
 
   test('Should correctly check address validity', () => {

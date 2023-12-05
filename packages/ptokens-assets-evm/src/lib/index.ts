@@ -1,14 +1,48 @@
+import { sha256 } from '@noble/hashes/sha256'
+import { AbiEvent, AbiEventParameter } from 'abitype'
 import BigNumber from 'bignumber.js'
-import { NetworkId } from 'ptokens-constants'
-import { PublicClient, keccak256, Abi } from 'viem'
-import { Web3, Log, TransactionReceipt } from 'web3'
-import { encodeEventSignature, decodeLog, encodeParameters } from 'web3-eth-abi'
-import { AbiEventFragment, ContractAbi } from 'web3-types'
-import { keccak256 } from 'web3-utils'
+import { FactoryAddress, NetworkId } from 'ptokens-constants'
+import { AssetInfo } from 'ptokens-entities'
+import {
+  Log,
+  toBytes,
+  toHex,
+  encodeAbiParameters,
+  decodeEventLog,
+  getEventSelector,
+  Chain,
+  TransactionReceipt,
+  createPublicClient,
+  http,
+} from 'viem'
+import { arbitrum, bsc, gnosis, polygon } from 'viem/chains'
 
-import events from '../abi/events'
+import factoryAbi from '../abi/PFactoryAbi'
+import pNetworkHubAbi from '../abi/PNetworkHubAbi'
+import { pTokensEvmProvider } from '../ptokens-evm-provider'
 
+const events = pNetworkHubAbi.filter(({ type }) => type === 'event') as AbiEvent[]
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
+
+const networkIdToViemChain: Record<NetworkId, Chain> = {
+  [NetworkId.ArbitrumMainnet]: arbitrum,
+  [NetworkId.BscMainnet]: bsc,
+  [NetworkId.GnosisMainnet]: gnosis,
+  [NetworkId.PolygonMainnet]: polygon,
+}
+
+export const formatAddress = (_address: string): `0x${string}` =>
+  _address.startsWith('0x') ? (_address as `0x${string}`) : (('0x' + _address) as `0x${string}`)
+
+export const getViemChain = (networkId: NetworkId): Chain => {
+  switch (networkId) {
+    case NetworkId.PolygonMainnet:
+      return polygon
+      break
+    default:
+      throw new Error(`${networkId} is not supported by ptokens.js`)
+  }
+}
 
 export function onChainFormat(_amount: BigNumber.Value, _decimals: number): BigNumber {
   return BigNumber(_amount).multipliedBy(BigNumber(10).pow(_decimals))
@@ -16,23 +50,6 @@ export function onChainFormat(_amount: BigNumber.Value, _decimals: number): BigN
 
 export function offChainFormat(_amount: BigNumber.Value, _decimals: number) {
   return BigNumber(_amount).dividedBy(BigNumber(10).pow(_decimals))
-}
-
-// export async function getAccount(_web3: Web3): Promise<string> {
-//   if (_web3.eth.defaultAccount) return _web3.eth.defaultAccount
-//   const accounts = await _web3.eth.getAccounts()
-//   return accounts[0]
-// }
-
-// export function getContract(_web3: Web3, _abi: Abi, _contractAddress: string, _account: string = undefined) {
-//   const contract = new _web3.eth.Contract(_abi, _contractAddress)
-//   contract.defaultAccount = _account
-//   return contract
-// }
-
-export async function getGasLimit(_publicClient: PublicClient) {
-  const block = await _publicClient.getBlock({blockTag: 'latest'})
-  return block.gasLimit
 }
 
 export enum EVENT_NAMES {
@@ -44,66 +61,53 @@ export enum EVENT_NAMES {
 
 export const eventNameToSignatureMap = new Map<string, string>(
   events.map((_event) => {
-    const signature = encodeEventSignature(_event)
+    const signature = getEventSelector(_event)
     return [_event.name, signature]
   }),
 )
 
-const topicToAbiMap = new Map(
-  events.map((_event) => {
-    const signature = eventNameToSignatureMap.get(_event.name)
-    return [signature, _event as AbiEventFragment]
-  }),
-)
-
 const getOperationIdFromObj = (_obj: any) => {
-  const types = [
-    'bytes32',
-    'bytes32',
-    'bytes4',
-    'uint256',
-    'string',
-    'bytes4',
-    'string',
-    'string',
-    'uint256',
-    'address',
-    'bytes4',
-    'uint256',
-    'bytes',
-    'bytes32',
-  ]
-  return keccak256(
-    encodeParameters(types, [
-      _obj.originatingBlockHash || _obj.originBlockHash || _obj.blockHash,
-      _obj.originatingTransactionHash || _obj.originTransactionHash || _obj.transactionHash,
-      _obj.originatingNetworkId || _obj.originNetworkId || _obj.networkId,
-      _obj.nonce,
-      _obj.destinationAccount,
-      _obj.destinationNetworkId,
-      _obj.underlyingAssetName,
-      _obj.underlyingAssetSymbol,
-      _obj.underlyingAssetDecimals,
-      _obj.underlyingAssetTokenAddress,
-      _obj.underlyingAssetNetworkId,
-      _obj.assetAmount,
-      _obj.userData || '0x',
-      _obj.optionsMask,
-    ]),
-  )
+  const events = pNetworkHubAbi.filter((_) => _.type === 'event') as AbiEvent[]
+  const tuple = events.find((_event) => _event.name === (EVENT_NAMES.OPERATION_EXECUTED as string))
+    ?.inputs as AbiEventParameter[]
+
+  const coded = encodeAbiParameters(tuple, [
+    {
+      originBlockHash: _obj.originatingBlockHash || _obj.originBlockHash || _obj.blockHash,
+      originTransactionHash: _obj.originatingTransactionHash || _obj.originTransactionHash || _obj.transactionHash,
+      originNetworkId: _obj.originatingNetworkId || _obj.originNetworkId || _obj.networkId,
+      nonce: _obj.nonce,
+      originAccount: _obj.originAccount,
+      destinationAccount: _obj.destinationAccount,
+      destinationNetworkId: _obj.destinationNetworkId,
+      forwardDestinationNetworkId: _obj.forwardDestinationNetworkId,
+      underlyingAssetName: _obj.underlyingAssetName,
+      underlyingAssetSymbol: _obj.underlyingAssetSymbol,
+      underlyingAssetDecimals: _obj.underlyingAssetDecimals,
+      underlyingAssetTokenAddress: _obj.underlyingAssetTokenAddress,
+      underlyingAssetNetworkId: _obj.underlyingAssetNetworkId,
+      assetAmount: _obj.assetAmount,
+      userDataProtocolFeeAssetAmount: _obj.userDataProtocolFeeAssetAmount,
+      networkFeeAssetAmount: _obj.networkFeeAssetAmount,
+      forwardNetworkFeeAssetAmount: _obj.forwardNetworkFeeAssetAmount,
+      userData: _obj.userData || '0x',
+      optionsMask: _obj.optionsMask,
+      isForProtocol: _obj.isForProtocol,
+    },
+  ])
+
+  return toHex(sha256(toBytes(coded)))
 }
 
-const getEventInputsFromSignature = (_signature: string) => {
-  if (topicToAbiMap.has(_signature)) return [...topicToAbiMap.get(_signature).inputs]
-  throw new Error(`Missing abi for event signature ${_signature}`)
-}
-
-export const getOperationIdFromLog = (_log: Log, _networkId: NetworkId = null) => {
-  const decodedLog = decodeLog(getEventInputsFromSignature(_log.topics[0].toString()), _log.data.toString(), [])
+export const getOperationIdFromLog = (_log: Log, _networkId: NetworkId | null = null) => {
+  const decodedLog = decodeEventLog({
+    abi: pNetworkHubAbi,
+    ..._log,
+  })
   return getOperationIdFromObj(
     Object.assign(
       {},
-      decodedLog.operation ? decodedLog.operation : decodedLog,
+      'operation' in decodedLog.args ? decodedLog.args.operation : decodedLog.args,
       {
         transactionHash: _log.transactionHash,
         blockHash: _log.blockHash,
@@ -113,15 +117,67 @@ export const getOperationIdFromLog = (_log: Log, _networkId: NetworkId = null) =
   )
 }
 
-export const getOperationIdFromTransactionReceipt = (_networkId: NetworkId, _receipt: TransactionReceipt) => {
-  return getOperationIdFromLog(
-    _receipt.logs.find(
-      (_log) =>
-        _log.topics[0] === eventNameToSignatureMap.get(EVENT_NAMES.USER_OPERATION) ||
-        _log.topics[0] === eventNameToSignatureMap.get(EVENT_NAMES.OPERATION_QUEUED) ||
-        _log.topics[0] === eventNameToSignatureMap.get(EVENT_NAMES.OPERATION_EXECUTED) ||
-        _log.topics[0] === eventNameToSignatureMap.get(EVENT_NAMES.OPERATION_CANCELLED),
-    ),
-    _networkId,
+export const getOperationIdFromTransactionReceipt = (_networkId: NetworkId, _receipt: TransactionReceipt<bigint>) => {
+  const relevantLog = _receipt.logs.find(
+    (_log) => _log.topics[0] === eventNameToSignatureMap.get(EVENT_NAMES.USER_OPERATION), //||
+    // _log.topics[0] === eventNameToSignatureMap.get(EVENT_NAMES.OPERATION_QUEUED) ||
+    // _log.topics[0] === eventNameToSignatureMap.get(EVENT_NAMES.OPERATION_EXECUTED) ||
+    // _log.topics[0] === eventNameToSignatureMap.get(EVENT_NAMES.OPERATION_CANCELLED),
   )
+  if (!relevantLog) throw new Error('No valid event in the receipt logs')
+  const operationIds = getOperationIdFromLog(relevantLog, _networkId)
+  return operationIds
+}
+
+export const getDefaultEvmProvider = (_networkId: NetworkId) =>
+  new pTokensEvmProvider(
+    createPublicClient({
+      chain: networkIdToViemChain[_networkId],
+      transport: http(),
+    }),
+  )
+
+export const getFactoryAddress = (_networkId: NetworkId): string => {
+  const factoryAddress = FactoryAddress.get(_networkId)
+  if (!factoryAddress) throw new Error(`Could not retreive ${_networkId} Factory address`)
+  return factoryAddress
+}
+
+export const getEvmHubAddress = async (_networkId: NetworkId, _evmProvider: pTokensEvmProvider): Promise<string> => {
+  try {
+    return await _evmProvider.makeContractCall<string, []>({
+      contractAddress: getFactoryAddress(_networkId),
+      method: 'hub',
+      abi: factoryAbi,
+    })
+  } catch (_err) {
+    if (!(_err instanceof Error)) throw new Error('Invalid Error type')
+    throw new Error(_err.message)
+  }
+}
+
+export const getEvmPToken = async (
+  _networkId: NetworkId,
+  _evmProvider: pTokensEvmProvider,
+  _assetInfo: AssetInfo,
+): Promise<string> => {
+  try {
+    return await _evmProvider.makeContractCall<string, [string, string, number, string, string]>(
+      {
+        contractAddress: getFactoryAddress(_networkId),
+        method: 'getPTokenAddress',
+        abi: factoryAbi,
+      },
+      [
+        _assetInfo.underlyingAssetName,
+        _assetInfo.underlyingAssetSymbol,
+        _assetInfo.underlyingAssetDecimals,
+        _assetInfo.underlyingAssetTokenAddress,
+        _assetInfo.underlyingAssetNetworkId,
+      ],
+    )
+  } catch (_err) {
+    if (!(_err instanceof Error)) throw new Error('Invalid Error type')
+    throw new Error(_err.message)
+  }
 }

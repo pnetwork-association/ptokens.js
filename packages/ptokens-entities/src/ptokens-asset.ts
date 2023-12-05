@@ -10,6 +10,7 @@ export type pTokenAssetConfig = {
   assetInfo: AssetInfo
   factoryAddress: string
   hubAddress: string
+  pTokenAddress: string
   /** The asset weight during the swap. Defaults to 1. Actually it is not supported.  */
   weight?: number
 }
@@ -50,10 +51,10 @@ export type AssetInfo = {
   assetTokenAddress?: string
   /** Token's decimals. */
   decimals: number
-  /** pNetwork enclave address. */
-  identity?: string
-  // /** Token-related fees. */
-  // fees: AssetFees
+  /** is a native token. */
+  isNative: boolean
+  /** pNetwork address. */
+  pTokenAddress?: string
   /** Underlying asset decmials*/
   underlyingAssetName: string
   /** Underlying asset symbol*/
@@ -74,6 +75,7 @@ export type SwapResult = {
 export abstract class pTokensAsset {
   private _factoryAddress: string
   private _hubAddress: string
+  private _pTokenAddress: string
   private _assetInfo: AssetInfo
   private _weight: number
   private _type: BlockchainType
@@ -89,6 +91,7 @@ export abstract class pTokensAsset {
     this._weight = _config.weight || 1
     this._factoryAddress = _config.factoryAddress
     this._hubAddress = _config.hubAddress
+    this._pTokenAddress = _config.pTokenAddress
   }
 
   /** Return the pTokensFactory's address. */
@@ -101,9 +104,19 @@ export abstract class pTokensAsset {
     return this._hubAddress
   }
 
+  /** Return the pNetworkHub's address. */
+  get pTokenAddress(): string {
+    return this._pTokenAddress
+  }
+
   /** Return the token's symbol. */
   get symbol(): string {
     return this.assetInfo.symbol
+  }
+
+  /** Return the token's blockchain type. */
+  get type(): BlockchainType {
+    return this._type
   }
 
   /** Return the chain ID of the token. */
@@ -124,11 +137,6 @@ export abstract class pTokensAsset {
   /** Return token smart contract address. */
   get assetTokenAddress(): string {
     return this.assetInfo.assetTokenAddress ? this.assetInfo.assetTokenAddress : null
-  }
-
-  /** Return the pNetwork enclave address for the token. */
-  get identity() {
-    return this.assetInfo.identity ? this.assetInfo.identity : null
   }
 
   /** Return the weight associated to the token during the swap. Its usage is currently not supported. */
@@ -162,5 +170,5 @@ export abstract class pTokensAsset {
     _userData?: string,
   ): PromiEvent<SwapResult>
 
-  protected abstract monitorCrossChainOperations(_operationId: string): PromiEvent<string>
+  protected abstract monitorCrossChainOperations(_operationId: string): PromiEvent<any>
 }

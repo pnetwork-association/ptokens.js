@@ -1,6 +1,10 @@
 import BigNumber from 'bignumber.js'
 import PromiEvent from 'promievent'
+import { getOperationIdFromLog } from 'ptokens-assets-evm'
+import { INTERIM_CHAIN_NETWORK_ID } from 'ptokens-constants'
 import { SwapResult, pTokensAsset } from 'ptokens-entities'
+
+import { interimProvider } from './lib'
 
 export type DestinationInfo = {
   asset: pTokensAsset
@@ -16,19 +20,30 @@ export class pTokensSwap {
   private _destinationAssets: DestinationInfo[]
   private _amount: BigNumber
   private _controller: AbortController
+  private _interimHubAddress: string
+  private _interimProvider: interimProvider
 
   /**
    * Create and initialize a pTokensSwap object. pTokensSwap object shall be created using a pTokensSwapBuilder object.
    * @param sourceAsset - The pTokensAsset that will be the source asset for the swap.
    * @param destinationAssets - The pTokensAsset array that will be destination assets for the swap.
    * @param amount - The amount of source asset that will be swapped.
+   * @param interimNetworkId - The NetworkId of the InterimChain.
    */
-  constructor(sourceAsset: pTokensAsset, destinationAssets: DestinationInfo[], amount: BigNumber.Value) {
+  constructor(
+    sourceAsset: pTokensAsset,
+    destinationAssets: DestinationInfo[],
+    amount: BigNumber.Value,
+    interimHubAddress: string,
+    interimProvider: interimProvider,
+  ) {
     this._sourceAsset = sourceAsset
     if (destinationAssets.length !== 1) throw new Error('There must be one and only one destination asset')
     this._destinationAssets = destinationAssets
     this._amount = BigNumber(amount)
     this._controller = new AbortController()
+    this._interimHubAddress = interimHubAddress
+    this._interimProvider = interimProvider
     if (!this.isAmountSufficient()) throw new Error('Insufficient amount to cover fees')
   }
 
@@ -91,6 +106,10 @@ export class pTokensSwap {
     return BigNumber(this.expectedOutputAmount).isGreaterThanOrEqualTo(0)
   }
 
+  private monitorInterimTransactions(_operationId: string) {
+    return this._interimProvider.monitorCrossChainOperations(this._interimHubAddress, _operationId)
+  }
+
   private monitorOutputTransactions(_operationId: string) {
     return this.destinationAssets[0]['monitorCrossChainOperations'](_operationId)
   }
@@ -137,17 +156,29 @@ export class pTokensSwap {
               .on('txConfirmed', (_swapResult: SwapResult) => {
                 promi.emit('inputTxConfirmed', _swapResult)
               })
-            const outputTx = await this.monitorOutputTransactions(swapResult.operationId)
+            const interimLog = await this.monitorInterimTransactions(swapResult.operationId)
               .on('operationQueued', (_hash: string) => {
-                promi.emit('operationQueued', { txHash: _hash, operationId: swapResult.operationId })
+                promi.emit('interimOperationQueued', { txHash: _hash, operationId: swapResult.operationId })
               })
               .on('operationExecuted', (_hash: string) => {
-                promi.emit('operationExecuted', { txHash: _hash, operationId: swapResult.operationId })
+                promi.emit('interimOperationExecuted', { txHash: _hash, operationId: swapResult.operationId })
               })
               .on('operationCancelled', (_hash: string) => {
-                promi.emit('operationCancelled', { txHash: _hash, operationId: swapResult.operationId })
+                promi.emit('interimOperationCancelled', { txHash: _hash, operationId: swapResult.operationId })
               })
-            return resolve({ txHash: outputTx, operationId: swapResult.operationId })
+            // const interimExecutedReceipt = await this._interimProvider.waitForTransactionConfirmation(interimTxHash, 2)
+            const destChainOperationId = getOperationIdFromLog(interimLog, INTERIM_CHAIN_NETWORK_ID)
+            const outputLog = await this.monitorOutputTransactions(destChainOperationId)
+              .on('operationQueued', (_hash: string) => {
+                promi.emit('operationQueued', { txHash: _hash, operationId: destChainOperationId })
+              })
+              .on('operationExecuted', (_hash: string) => {
+                promi.emit('operationExecuted', { txHash: _hash, operationId: destChainOperationId })
+              })
+              .on('operationCancelled', (_hash: string) => {
+                promi.emit('operationCancelled', { txHash: _hash, operationId: destChainOperationId })
+              })
+            return resolve({ txHash: outputLog, operationId: destChainOperationId })
           } catch (err) {
             return reject(err)
           }

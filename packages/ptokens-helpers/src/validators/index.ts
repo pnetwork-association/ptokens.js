@@ -7,10 +7,9 @@ const validatorFunction =
     validate(_address, _blockchain, _network)
 
 export const chainIdToAddressValidatorMap: Map<NetworkId, (_address: string) => boolean> = new Map([
-  [NetworkId.SepoliaTestnet, validatorFunction('eth')],
-  [NetworkId.GoerliTestnet, validatorFunction('eth')],
   [NetworkId.ArbitrumMainnet, validatorFunction('eth')],
   [NetworkId.GnosisMainnet, validatorFunction('eth')],
+  [NetworkId.BscMainnet, validatorFunction('eth')],
   [NetworkId.PolygonMainnet, validatorFunction('eth')],
 ])
 

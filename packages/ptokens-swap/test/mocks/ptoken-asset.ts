@@ -2,13 +2,15 @@ import PromiEvent from 'promievent'
 import { BlockchainType } from 'ptokens-constants'
 import { pTokensAsset, pTokensAssetProvider, pTokenAssetConfig, SwapResult } from 'ptokens-entities'
 
+import logs from '../utils/logs.json'
+
 export class pTokensProviderMock implements pTokensAssetProvider {
   /* istanbul ignore next */
   waitForTransactionConfirmation(_txHash: string): Promise<string> {
     return Promise.resolve(_txHash)
   }
-  monitorCrossChainOperations(): PromiEvent<string> {
-    const promi = new PromiEvent<string>((resolve) =>
+  monitorCrossChainOperations(): PromiEvent<any> {
+    const promi = new PromiEvent<any>((resolve) =>
       setImmediate(() => {
         promi.emit('operationQueued', 'operation-queued-tx-hash')
         promi.emit('operationExecuted', 'operation-executed-tx-hash')
@@ -17,7 +19,25 @@ export class pTokensProviderMock implements pTokensAssetProvider {
     )
     return promi
   }
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  makeContractCall(...args: any[]): Promise<any> {
+    return new Promise((resolve) => resolve('contract-called'))
+  }
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 }
+
+/* eslint-disable @typescript-eslint/no-unused-vars */
+export const mockedMonitorCrossChainOperations = (_hubAddress: string, _operationId: string): PromiEvent<any> => {
+  const promi = new PromiEvent<any>((resolve) =>
+    setImmediate(() => {
+      promi.emit('operationQueued', 'interim-operation-queued-tx-hash')
+      promi.emit('operationExecuted', 'interim-operation-executed-tx-hash')
+      return resolve(logs[0])
+    }),
+  )
+  return promi
+}
+/* eslint-enable @typescript-eslint/no-unused-vars */
 
 export type pTokenAssetMockConfig = pTokenAssetConfig & {
   /** An pTokensAlgorandProvider for interacting with the underlaying blockchain */
@@ -46,7 +66,7 @@ export class pTokenAssetMock extends pTokensAsset {
     return promi
   }
 
-  protected monitorCrossChainOperations(): PromiEvent<string> {
+  protected monitorCrossChainOperations(): PromiEvent<any> {
     return this.provider.monitorCrossChainOperations()
   }
 }
@@ -75,8 +95,8 @@ export class pTokenAssetFailingMock extends pTokensAsset {
   }
 
   /* istanbul ignore next */
-  protected monitorCrossChainOperations(): PromiEvent<string> {
-    const promi = new PromiEvent<string>((resolve, reject) =>
+  protected monitorCrossChainOperations(): PromiEvent<any> {
+    const promi = new PromiEvent<any>((resolve, reject) =>
       setImmediate(() => {
         return reject(new Error('monitorCrossChainOperations error'))
       }),

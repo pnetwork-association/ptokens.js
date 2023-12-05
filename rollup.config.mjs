@@ -43,7 +43,7 @@ export default [
         presets: ['@babel/env', '@babel/typescript'],
         plugins: [
           '@babel/plugin-proposal-export-default-from',
-          '@babel/plugin-proposal-export-namespace-from',
+          '@babel/plugin-transform-export-namespace-from',
           [
             '@babel/plugin-transform-runtime',
             {

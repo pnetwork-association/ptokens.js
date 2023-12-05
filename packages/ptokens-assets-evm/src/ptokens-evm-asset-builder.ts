@@ -1,8 +1,8 @@
 import { BlockchainType } from 'ptokens-constants'
 import { pTokensAssetBuilder } from 'ptokens-entities'
 
-import factoryAbi from './abi/PFactoryAbi'
-import { pTokensEvmAsset } from './ptokens-evm-asset'
+import { getEvmHubAddress, getEvmPToken } from './lib'
+import { pTokenEvmAssetConfig, pTokensEvmAsset } from './ptokens-evm-asset'
 import { pTokensEvmProvider } from './ptokens-evm-provider'
 
 export class pTokensEvmAssetBuilder extends pTokensAssetBuilder {
@@ -25,39 +25,34 @@ export class pTokensEvmAssetBuilder extends pTokensAssetBuilder {
 
   // eslint-disable-next-line @typescript-eslint/require-await
   protected async _build(): Promise<pTokensEvmAsset> {
-    const hubAddress = await this._provider.makeContractCall<string, []>({
-      contractAddress: this.factoryAddress,
-      method: 'hub',
-      abi: factoryAbi,
-    })
-
-    if (this._assetInfo.assetTokenAddress !== this._assetInfo.underlyingAssetTokenAddress) {
-      const pTokenAddress = await this._provider.makeContractCall<string, [string, string, number, string, string]>(
-        {
-          contractAddress: this.factoryAddress,
-          method: 'getPTokenAddress',
-          abi: factoryAbi,
-        },
-        [
-          this.assetInfo.underlyingAssetName,
-          this.assetInfo.underlyingAssetSymbol,
-          this.assetInfo.underlyingAssetDecimals,
-          this.assetInfo.underlyingAssetTokenAddress,
-          this.assetInfo.underlyingAssetNetworkId,
-        ],
-      )
+    const hubAddress = await getEvmHubAddress(this._networkId, this._provider)
+    const pTokenAddress = await getEvmPToken(this._networkId, this._provider, this.assetInfo)
+    if (this.assetInfo.isNative) {
+      if (this.assetInfo.assetTokenAddress != this.assetInfo.underlyingAssetTokenAddress)
+        throw new Error(
+          `Asset is native but ${this.assetInfo.assetTokenAddress} != ${this.assetInfo.underlyingAssetTokenAddress}`,
+        )
+      if (!this.assetInfo.pTokenAddress) this.assetInfo.pTokenAddress = pTokenAddress
+      if (this.assetInfo.pTokenAddress != pTokenAddress)
+        throw new Error(
+          `Passed pToken is not correct: received -> ${this.assetInfo.pTokenAddress} correct -> ${pTokenAddress}`,
+        )
+    } else {
+      if (this.assetInfo.assetTokenAddress == this.assetInfo.underlyingAssetTokenAddress)
+        throw new Error(
+          `pToken cannot be underlying of itself: ${this.assetInfo.assetTokenAddress} must be different from ${this.assetInfo.underlyingAssetTokenAddress}`,
+        )
       if (!this.assetInfo.assetTokenAddress) this.assetInfo.assetTokenAddress = pTokenAddress
-      else if (pTokenAddress !== this.assetInfo.assetTokenAddress) throw new Error('Invalid pToken address')
+      if (this.assetInfo.assetTokenAddress != pTokenAddress)
+        throw new Error(`Asset is pToken but ${this.assetInfo.assetTokenAddress} != ${pTokenAddress}`)
     }
 
-    const config = {
-      networkId: this._networkId,
-      blockchain: this._blockchain,
-      network: this._network,
+    const config: pTokenEvmAssetConfig = {
       assetInfo: this.assetInfo,
       provider: this._provider,
       factoryAddress: this.factoryAddress,
-      hubAddress,
+      hubAddress: hubAddress,
+      pTokenAddress: pTokenAddress,
     }
     return new pTokensEvmAsset(config)
   }

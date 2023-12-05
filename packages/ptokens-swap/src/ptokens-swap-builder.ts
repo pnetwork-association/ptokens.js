@@ -1,7 +1,10 @@
 import BigNumber from 'bignumber.js'
+import { getDefaultEvmProvider, getEvmHubAddress } from 'ptokens-assets-evm'
+import { BlockchainType, INTERIM_CHAIN_NETWORK_ID, NetworkId, networkIdToTypeMap } from 'ptokens-constants'
 import { pTokensAsset } from 'ptokens-entities'
 import { validators } from 'ptokens-helpers'
 
+import { interimProvider } from './lib'
 import { pTokensSwap, DestinationInfo } from './ptokens-swap'
 
 export class pTokensSwapBuilder {
@@ -10,6 +13,9 @@ export class pTokensSwapBuilder {
   private _amount: BigNumber
   private _networkFees: BigNumber
   private _forwardNetworkFees: BigNumber
+  private _interimNetworkId: NetworkId
+  private _interimProvider: interimProvider
+  private _interimHubAddress: string
 
   /**
    * Return the pTokensAsset set as source asset for the swap.
@@ -118,20 +124,69 @@ export class pTokensSwapBuilder {
     return this
   }
 
+  /**
+   * Set Interim Chain NetworkId.
+   * @param _networkId - The NetworkId of the Interim Chain.
+   * @returns The same builder. This allows methods chaining.
+   */
+  setInterimChain(_networkId: NetworkId) {
+    this._interimNetworkId = _networkId
+    return this
+  }
+
+  /**
+   * Set a Interim provider.
+   * @param provider - A pTokensAssetProvider.
+   * @returns The same builder. This allows methods chaining.
+   */
+  setInterimProvider(interimProvider: interimProvider): this {
+    this._interimProvider = interimProvider
+    return this
+  }
+
+  /**
+   * Set the Interim Hub address.
+   * @param interimHubAddress - A EVM address.
+   * @returns The same builder. This allows methods chaining.
+   */
+  setInterimHubAddress(interimHubAddress: string): this {
+    this._interimHubAddress = interimHubAddress
+    return this
+  }
+
   private isValidSwap() {
     return true // TODO: check ptoken adresses are the same
+  }
+
+  async getInterimHubAddress(): Promise<string> {
+    return networkIdToTypeMap.get(INTERIM_CHAIN_NETWORK_ID) === BlockchainType.EVM
+      ? await getEvmHubAddress(INTERIM_CHAIN_NETWORK_ID, this._interimProvider)
+      : null
   }
 
   /**
    * Build a pTokensSwap object from the parameters set when interacting with the builder.
    * @returns - An immutable pTokensSwap object.
    */
-  build(): pTokensSwap {
+  async build(): Promise<pTokensSwap> {
     if (!this._sourceAsset) throw new Error('Missing source asset')
     if (this._destinationAssets.length === 0) throw new Error('Missing destination assets')
     if (!this._amount) throw new Error('Missing amount')
     if (!this.isValidSwap()) throw new Error('Invalid swap')
-    const ret = new pTokensSwap(this.sourceAsset, this._destinationAssets, this._amount)
-    return ret
+    if (!this._interimNetworkId) this.setInterimChain(INTERIM_CHAIN_NETWORK_ID)
+    // Only EVM is currently supported
+    if (!this._interimProvider)
+      networkIdToTypeMap.get(INTERIM_CHAIN_NETWORK_ID) === BlockchainType.EVM
+        ? this.setInterimProvider(getDefaultEvmProvider(INTERIM_CHAIN_NETWORK_ID))
+        : null
+    if (!this._interimHubAddress) this.setInterimHubAddress(await this.getInterimHubAddress())
+
+    return new pTokensSwap(
+      this.sourceAsset,
+      this._destinationAssets,
+      this._amount,
+      this._interimHubAddress,
+      this._interimProvider,
+    )
   }
 }

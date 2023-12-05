@@ -1,6 +1,6 @@
 {
   "name": "ptokens-assets-evm",
-  "version": "1.4.0",
+  "version": "2.0.0",
   "main": "dist/bundle.cjs.js",
   "module": "dist/bundle.esm.js",
   "types": "dist/index.d.ts",
@@ -19,7 +19,7 @@
     "ptokens-constants": "file:../ptokens-constants",
     "ptokens-entities": "file:../ptokens-entities",
     "ptokens-helpers": "file:../ptokens-helpers",
-    "viem": "^1.11.1"
+    "viem": "^1.19.9"
   },
   "typedoc": {
     "entryPoint": "./src/index.ts",

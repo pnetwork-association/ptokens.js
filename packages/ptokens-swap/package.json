@@ -1,6 +1,6 @@
 {
   "name": "ptokens-swap",
-  "version": "1.4.0",
+  "version": "2.0.0",
   "main": "dist/bundle.cjs.js",
   "module": "dist/bundle.esm.js",
   "types": "dist/index.d.ts",
@@ -18,9 +18,7 @@
     "promievent": "^0.1.5",
     "ptokens-constants": "file:../ptokens-constants",
     "ptokens-entities": "file:../ptokens-entities",
-    "ptokens-helpers": "file:../ptokens-helpers"
-  },
-  "devDependencies": {
+    "ptokens-helpers": "file:../ptokens-helpers",
     "ptokens-assets-evm": "file:../ptokens-assets-evm"
   },
   "typedoc": {
